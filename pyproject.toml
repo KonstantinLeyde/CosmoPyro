@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools-scm[toml]>=6.2", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cosmopyro"
+version = "0.0.1a1"
+authors = [
+  { name="Konstantin Leyde", email="konstantin.leyde@gmail.com" },
+]
+description = "Population Inference with gravitational-wave dark-siren"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+keywords = [
+    "hamiltonian monte-carlo",
+    "cosmology",
+    "gravitational waves"
+]
+dependencies = [
+    "jax",
+    "numpyro",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "scipy",
+    "corner",
+    "pyyaml",
+    "arviz",
+    "optax",
+    "rich",
+    "healpy"
+]
+
+[project.urls]
+Homepage = "https://github.com/konstantinleyde/cosmopyro"
+Issues = "https://github.com/konstantinleyde/cosmopyro/issues"
