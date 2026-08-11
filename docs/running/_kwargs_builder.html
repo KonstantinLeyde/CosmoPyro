@@ -1,0 +1,1150 @@
+<style>
+.kb-container { font-family: sans-serif; max-width: 900px; }
+.kb-section { margin-bottom: 1.5em; padding: 1em; border: 1px solid var(--color-background-border, #ddd); border-radius: 6px; background: var(--color-background-secondary, #f9f9f9); color: var(--color-foreground-primary, #333); overflow: visible; }
+.kb-section h3 { margin-top: 0; color: var(--color-foreground-primary, #333); border-bottom: 1px solid var(--color-background-border, #ccc); padding-bottom: 0.3em; }
+.kb-section h4 { color: var(--color-foreground-secondary, #555) !important; }
+.kb-row { display: flex; gap: 0.5em; align-items: center; margin: 0.4em 0; flex-wrap: wrap; }
+.kb-row label { width: 220px; min-width: 220px; flex-shrink: 0; font-size: 0.9em; color: var(--color-foreground-primary, inherit); }
+.kb-row label code { font-size: 0.92em; padding: 1px 4px; background: rgba(0,0,0,0.04); border: none; border-radius: 3px; display: block; max-width: 200px; overflow-x: auto; white-space: nowrap; scrollbar-width: thin; color: var(--color-foreground-primary, #000); }
+.kb-row label code::-webkit-scrollbar { height: 3px; }
+.kb-row label code::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+.kb-row input { font-size: 0.9em; padding: 6px 10px; background: var(--color-background-primary, #fff); color: var(--color-foreground-primary, #333); border: 1px solid var(--color-background-border, #ccc); border-radius: 6px; transition: border-color 0.2s, box-shadow 0.2s; }
+.kb-row input:hover { border-color: #94a3b8; }
+.kb-row input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+/* Custom dropdown */
+.kb-dropdown { position: relative; display: inline-block; min-width: 120px; }
+.kb-dropdown-trigger { font-size: 0.9em; padding: 6px 32px 6px 10px; background: var(--color-background-primary, #fff); color: var(--color-foreground-primary, #333); border: 1px solid var(--color-background-border, #ccc); border-radius: 6px; cursor: pointer; font-weight: 500; user-select: none; white-space: nowrap; transition: border-color 0.2s, box-shadow 0.2s; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+.kb-dropdown-trigger:hover { border-color: #94a3b8; }
+.kb-dropdown.open .kb-dropdown-trigger { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.kb-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; min-width: 100%; z-index: 50; background: var(--color-background-primary, #fff); border: 1px solid #2563eb; border-top: none; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.kb-dropdown.open .kb-dropdown-menu { display: block; }
+.kb-dropdown-item { padding: 6px 10px; font-size: 0.9em; cursor: pointer; color: var(--color-foreground-primary, #333); transition: background 0.1s; white-space: nowrap; }
+.kb-dropdown-item:hover { background: rgba(37,99,235,0.08); color: #2563eb; }
+/* Hide native selects - we keep them for value storage but render custom UI */
+.kb-row select.kb-hidden-select { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+.kb-row input[type=number] { width: 90px; cursor: ew-resize; -moz-appearance: textfield; }
+.kb-row input[type=number]::-webkit-inner-spin-button,
+.kb-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.kb-prior-fields { display: inline-flex; gap: 0.4em; align-items: center; }
+.kb-prior-fields span { font-size: 0.85em; color: var(--color-foreground-secondary, #666); }
+#kb-yaml-output { width: 100%; min-height: 400px; font-family: monospace; font-size: 0.85em; background: #1e1e1e; color: #d4d4d4; padding: 1em; border-radius: 4px; border: none; white-space: pre; overflow-x: auto; }
+.kb-btn { padding: 8px 20px; font-size: 1em; cursor: pointer; border: none; border-radius: 4px; margin-right: 0.5em; margin-top: 0.5em; }
+.kb-btn-primary { background: #2563eb; color: white; }
+.kb-btn-primary:hover { background: #1d4ed8; }
+.kb-btn-secondary { background: #6b7280; color: white; }
+.kb-btn-secondary:hover { background: #4b5563; }
+.kb-btn-upload { background: #059669; color: white; }
+.kb-btn-upload:hover { background: #047857; }
+/* Model selector — pill grid, 3 columns */
+.kb-model-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 0.3em; border: 1px solid var(--color-background-border, #ccc); border-radius: 8px; overflow: hidden; background: var(--color-background-primary, #fff); }
+.kb-model-card { padding: 0.6em 1em; cursor: pointer; font-size: 1em; background: transparent; color: var(--color-foreground-secondary, #666); transition: all 0.15s; user-select: none; text-align: center; border-right: 1px solid var(--color-background-border, #e0e0e0); border-bottom: 1px solid var(--color-background-border, #e0e0e0); position: relative; }
+.kb-model-card:nth-child(3n) { border-right: none; }
+.kb-model-card.kb-last-row { border-bottom: none; }
+.kb-model-card:hover { background: rgba(37,99,235,0.04); color: var(--color-foreground-primary, #333); }
+.kb-model-card.active { background: #2563eb; color: #fff; font-weight: 500; }
+.kb-model-card.active:hover { background: #1d4ed8; }
+.kb-model-card .kb-card-name { font-family: monospace; font-size: 1em; letter-spacing: -0.01em; }
+.kb-model-card .kb-card-desc { font-size: 0.8em; opacity: 0.75; margin-top: 0.15em; }
+.kb-model-card.active .kb-card-desc { opacity: 0.9; }
+.kb-toggle-btns { float: right; }
+.kb-btn-mini { font-size: 0.75em; padding: 2px 8px; margin-left: 4px; cursor: pointer; border: 1px solid var(--color-background-border, #ccc); border-radius: 4px; background: var(--color-background-primary, #fff); color: var(--color-foreground-secondary, #666); }
+.kb-btn-mini:hover { border-color: #2563eb; color: #2563eb; }
+</style>
+
+<div class="kb-container">
+
+<!-- Upload existing config -->
+<div style="margin-bottom: 1em;">
+  <button class="kb-btn kb-btn-upload" onclick="document.getElementById('kb-upload-input').click()">Optional: Upload Config File (yaml)</button>
+  <input type="file" id="kb-upload-input" accept=".yaml,.yml" style="display:none" onchange="kbUpload(event)">
+  <span style="font-size:0.85em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Load an existing config to edit</span>
+</div>
+
+<!-- Cosmology Model & Priors -->
+<div class="kb-section">
+  <h3>Cosmology Model & Priors <span class="kb-toggle-btns"><button class="kb-btn-mini" onclick="resetPriorsToDefault('cosmo', COSMO_PRIORS)">Default</button><button class="kb-btn-mini" onclick="resetCosmoModelPriorsToDefault()">Default MG</button><button class="kb-btn-mini" onclick="toggleAllPriors('cosmo','Delta')">All Delta</button><button class="kb-btn-mini" onclick="toggleAllPriors('cosmo','Uniform')">All Uniform</button></span></h3>
+  <div class="kb-model-grid" id="kb-cosmo-model-grid" style="margin-bottom: 0.6em;"></div>
+  <div id="kb-cosmo-priors"></div>
+  <div id="kb-cosmo-model-priors"></div>
+</div>
+
+<!-- Redshift -->
+<div class="kb-section">
+  <h3>Redshift (Madau-Dickinson) <span class="kb-toggle-btns"><button class="kb-btn-mini" onclick="resetPriorsToDefault('rz', REDSHIFT_PRIORS)">Default</button><button class="kb-btn-mini" onclick="toggleAllPriors('rz','Delta')">All Delta</button><button class="kb-btn-mini" onclick="toggleAllPriors('rz','Uniform')">All Uniform</button></span></h3>
+  <div id="kb-redshift-priors"></div>
+</div>
+
+<!-- Mass model + priors (grouped together) -->
+<div class="kb-section">
+  <h3>Mass Model & Priors <span class="kb-toggle-btns"><button class="kb-btn-mini" onclick="resetMassPriorsToDefault()">Default</button><button class="kb-btn-mini" onclick="toggleAllMassPriors('Delta')">All Delta</button><button class="kb-btn-mini" onclick="toggleAllMassPriors('Uniform')">All Uniform</button></span></h3>
+  <div class="kb-model-grid" id="kb-model-grid" style="margin-bottom: 0.6em;"></div>
+  <div id="kb-mass-priors"></div>
+</div>
+
+<!-- Binning -->
+<div class="kb-section">
+  <h3>Binning</h3>
+  <div id="kb-binning"></div>
+  <div class="kb-row" style="margin-top:0.6em;">
+    <label><code>mass_grid_interpolation</code></label>
+    <select id="kb-mass-interp">
+      <option value="smooth_log" selected>smooth_log</option>
+      <option value="linear_density">linear_density</option>
+    </select>
+    <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Interpolation used for mass grids</span>
+  </div>
+  <div class="kb-row">
+    <label><code>redshift_grid_interpolation</code></label>
+    <select id="kb-redshift-interp">
+      <option value="smooth_log" selected>smooth_log</option>
+      <option value="linear_density">linear_density</option>
+    </select>
+    <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Interpolation used for redshift grids</span>
+  </div>
+</div>
+
+<!-- Sampler -->
+<div class="kb-section">
+  <h3>Sampler <span class="kb-toggle-btns"><button class="kb-btn-mini" onclick="applySamplerPreset('Default')">Default</button></span></h3>
+  <div class="kb-model-grid" id="kb-sampler-presets" style="margin-bottom:0.6em;"></div>
+  <div id="kb-sampler"></div>
+</div>
+
+<!-- Likelihood evaluation -->
+<div class="kb-section">
+  <h3>Likelihood Evaluation</h3>
+  <div class="kb-row">
+    <label><code>posterior_samples_batch_size</code></label>
+    <input type="number" id="kb-ps-batch" value="10000000" step="1000000">
+    <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Batch size for PE sample evaluation</span>
+  </div>
+  <div class="kb-row">
+    <label><code>injections_batch_size</code></label>
+    <input type="number" id="kb-inj-batch" value="10000000" step="1000000">
+    <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Batch size for injection evaluation</span>
+  </div>
+  <div class="kb-row">
+    <label><code>nonfinite_log_prob_policy</code></label>
+    <select id="kb-nonfinite-policy">
+      <option value="repair" selected>repair</option>
+      <option value="strict">strict</option>
+    </select>
+    <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">How to handle NaN/inf likelihood terms</span>
+  </div>
+</div>
+
+<!-- Misc -->
+<div class="kb-section">
+  <h3>Miscellaneous</h3>
+  <div class="kb-row">
+    <label><code>z_min</code></label>
+    <input type="number" id="kb-zmin" value="1.0e-05" step="any">
+  </div>
+  <div class="kb-row">
+    <label><code>z_max</code></label>
+    <input type="number" id="kb-zmax" value="5.0" step="0.1">
+  </div>
+  <div class="kb-row">
+    <label><code>z_steps</code></label>
+    <input type="number" id="kb-zsteps" value="50000" step="10000">
+  </div>
+  <div class="kb-row">
+    <label><code>results_path</code></label>
+    <input type="text" id="kb-results-path" value="../../results/" style="width:300px;">
+  </div>
+</div>
+
+<!-- Output -->
+<div class="kb-section">
+  <h3>Generated YAML</h3>
+  <button class="kb-btn kb-btn-secondary" onclick="kbDownload()">Download</button>
+  <br><br>
+  <textarea id="kb-yaml-output"></textarea>
+</div>
+
+</div>
+
+<!-- Load model registry (generated from docs/model_registry.py at build time) -->
+<script src="../_static/model_registry.js"></script>
+<script>
+// MODEL_REGISTRY and COSMO_MODEL_REGISTRY are defined by the script tag above
+let MODELS = (typeof MODEL_REGISTRY !== "undefined") ? MODEL_REGISTRY : {};
+let COSMO_MODELS = (typeof COSMO_MODEL_REGISTRY !== "undefined") ? COSMO_MODEL_REGISTRY : {};
+let selectedModel = "power_law_peak2";
+let selectedCosmoModel = "FlatLambdaCDM";
+
+function renderModelCards() {
+  const grid = document.getElementById("kb-model-grid");
+  const entries = Object.entries(MODELS);
+  const cols = 3;
+  const lastRowStart = entries.length - ((entries.length % cols) || cols);
+  grid.innerHTML = entries.map(([id, m], i) =>
+    `<div class="kb-model-card ${id === selectedModel ? 'active' : ''} ${i >= lastRowStart ? 'kb-last-row' : ''}" onclick="selectModel('${id}')">
+      <div class="kb-card-name">${id}</div>
+      <div class="kb-card-desc">${m.description || ''}</div>
+    </div>`
+  ).join("");
+}
+
+function renderCosmoModelCards() {
+  const grid = document.getElementById("kb-cosmo-model-grid");
+  if (!grid) return;
+  const entries = Object.entries(COSMO_MODELS);
+  const cols = 3;
+  const lastRowStart = entries.length - ((entries.length % cols) || cols);
+  grid.innerHTML = entries.map(([id, m], i) =>
+    `<div class="kb-model-card ${id === selectedCosmoModel ? 'active' : ''} ${i >= lastRowStart ? 'kb-last-row' : ''}" onclick="selectCosmoModel('${id}')">
+      <div class="kb-card-name">${id}</div>
+      <div class="kb-card-desc">${m.description || ''}</div>
+    </div>`
+  ).join("");
+}
+
+function selectModel(id) {
+  selectedModel = id;
+  renderModelCards();
+  kbUpdateUI();
+}
+
+function selectCosmoModel(id) {
+  selectedCosmoModel = id;
+  renderCosmoModelCards();
+  renderCosmoModelPriors();
+}
+
+function renderCosmoModelPriors() {
+  const container = document.getElementById("kb-cosmo-model-priors");
+  if (!container) return;
+  const cm = COSMO_MODELS[selectedCosmoModel];
+  if (!cm || !cm.cosmo_priors || Object.keys(cm.cosmo_priors).length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+  let html = "";
+  for (const [group, params] of Object.entries(cm.cosmo_priors)) {
+    html += `<h4 style="margin:0.8em 0 0.3em;color:var(--color-foreground-secondary,#555);">${group}</h4>`;
+    for (const [k, v] of Object.entries(params)) html += makePriorRow(k, v, "cmg_" + group, false);
+  }
+  container.innerHTML = html;
+}
+
+function resetCosmoModelPriorsToDefault() {
+  const cm = COSMO_MODELS[selectedCosmoModel];
+  if (!cm || !cm.cosmo_priors) return;
+  for (const [group, params] of Object.entries(cm.cosmo_priors)) {
+    for (const [k, v] of Object.entries(params)) resetPriorToDefault("cmg_" + group, k, v);
+  }
+}
+
+const COSMO_PRIORS = {
+  h:       { type: "Uniform", min: 0.1, max: 2.0, value: 0.7 },
+  Omega_m: { type: "Delta", min: 0.1, max: 0.5, value: 0.3 },
+};
+
+const REDSHIFT_PRIORS = {
+  gamma: { type: "Uniform", min: 0.0, max: 5.0, value: 2.0 },
+  kappa: { type: "Uniform", min: 0.0, max: 6.0, value: 3.0 },
+  zp:    { type: "Uniform", min: 0.0, max: 4.0, value: 2.0 },
+};
+
+const SAMPLER_PRESETS = {
+  "Default": {
+    num_chains: 1, num_warmup: 1000, num_posterior_samples: 1000,
+    num_posterior_samples_per_batch: 100, max_tree_depth: 10,
+    target_accept_prob: 0.8, num_svi_steps: 0, num_svi_samples: 0,
+  },
+  "Debug": {
+    num_chains: 1, num_warmup: 150, num_posterior_samples: 150,
+    num_posterior_samples_per_batch: 50, max_tree_depth: 10,
+    target_accept_prob: 0.8, num_svi_steps: 0, num_svi_samples: 0,
+  },
+  "No SVI": {
+    num_chains: 1, num_warmup: 1000, num_posterior_samples: 1000,
+    num_posterior_samples_per_batch: 100, max_tree_depth: 10,
+    target_accept_prob: 0.8, num_svi_steps: 0, num_svi_samples: 0,
+  },
+  "With SVI": {
+    num_chains: 1, num_warmup: 1000, num_posterior_samples: 1000,
+    num_posterior_samples_per_batch: 100, max_tree_depth: 10,
+    target_accept_prob: 0.8, num_svi_steps: 5000, num_svi_samples: 800,
+    gibbs_mh_step_size: 0.01, gibbs_num_mh_steps: 10,
+    guide_type: "AutoLowRankMultivariateNormal",
+  },
+  "Gibbs (h)": {
+    num_chains: 1, num_warmup: 1000, num_posterior_samples: 1000,
+    num_posterior_samples_per_batch: 100, max_tree_depth: 10,
+    target_accept_prob: 0.8, num_svi_steps: 0, num_svi_samples: 0,
+    gibbs_mh_step_size: 0.01, gibbs_num_mh_steps: 10,
+  },
+};
+
+let selectedSamplerPreset = "Default";
+
+function renderSamplerPresets() {
+  const grid = document.getElementById("kb-sampler-presets");
+  grid.innerHTML = Object.keys(SAMPLER_PRESETS).map(name =>
+    `<div class="kb-model-card ${name === selectedSamplerPreset ? 'active' : ''}" onclick="applySamplerPreset('${name}')">
+      <div class="kb-card-name">${name}</div>
+    </div>`
+  ).join("");
+}
+
+function applySamplerPreset(name) {
+  selectedSamplerPreset = name;
+  const preset = SAMPLER_PRESETS[name];
+  for (const [k, v] of Object.entries(preset)) {
+    const el = document.getElementById("sampler_" + k);
+    if (el) el.value = v;
+  }
+  // Set gibbs_sites field based on preset
+  const gibbsEl = document.getElementById("sampler_gibbs_sites");
+  if (gibbsEl) {
+    gibbsEl.value = (name === "Gibbs (h)") ? "h" : "";
+  }
+  renderSamplerPresets();
+  updateGibbsStepVisibility();
+  updateSviGuideVisibility();
+}
+
+const SAMPLER_DEFAULTS = {
+  num_chains:                   { val: 1,    desc: "Number of independent MCMC chains" },
+  num_warmup:                   { val: 1000, desc: "Warmup (burn-in) iterations per chain" },
+  num_posterior_samples:        { val: 1000, desc: "Posterior samples to draw per chain" },
+  num_posterior_samples_per_batch: { val: 100, desc: "Samples per saved batch (memory control)" },
+  max_tree_depth:               { val: 10,   desc: "NUTS max tree depth (higher = slower but more accurate)" },
+  target_accept_prob:           { val: 0.8,  desc: "Target acceptance probability for step-size tuning" },
+  num_svi_steps:                { val: 0,    desc: "SVI optimization steps (set 0 to skip)" },
+  num_svi_samples:              { val: 0,    desc: "Samples drawn from SVI guide for initialization" },
+};
+
+// --- Custom dropdown helpers ---
+// Registry: stores onchange callbacks keyed by select ID
+const _ddCallbacks = {};
+
+function makeCustomSelect(id, options, selected, onchange) {
+  if (onchange) _ddCallbacks[id] = onchange;
+  // Hidden select for value storage
+  let html = `<select id="${id}" class="kb-hidden-select">`;
+  for (const opt of options) html += `<option value="${opt}" ${opt===selected?'selected':''}>${opt}</option>`;
+  html += `</select>`;
+  // Custom visual dropdown
+  html += `<div class="kb-dropdown" id="${id}__dd" data-select-id="${id}">`;
+  html += `<div class="kb-dropdown-trigger">${selected}</div>`;
+  html += `<div class="kb-dropdown-menu">`;
+  for (const opt of options) {
+    if (opt === selected) continue;
+    html += `<div class="kb-dropdown-item" data-value="${opt}">${opt}</div>`;
+  }
+  html += `</div></div>`;
+  return html;
+}
+
+function refreshDropdownMenu(dd, selectId) {
+  const sel = document.getElementById(selectId);
+  const options = Array.from(sel.options).map(o => o.value);
+  const current = sel.value;
+  dd.querySelector('.kb-dropdown-trigger').textContent = current;
+  dd.querySelector('.kb-dropdown-menu').innerHTML = options.filter(o => o !== current).map(o =>
+    `<div class="kb-dropdown-item" data-value="${o}">${o}</div>`
+  ).join('');
+}
+
+function runDropdownCallback(selectId) {
+  const callback = _ddCallbacks[selectId];
+  if (!callback) return;
+  if (typeof callback === "function") {
+    callback();
+    return;
+  }
+  if (typeof callback === "string") {
+    eval(callback);
+  }
+}
+
+// Single delegated event handler for all dropdowns
+document.addEventListener('click', function(e) {
+  // Click on trigger: toggle open
+  const trigger = e.target.closest('.kb-dropdown-trigger');
+  if (trigger) {
+    const dd = trigger.closest('.kb-dropdown');
+    // Close all others
+    document.querySelectorAll('.kb-dropdown.open').forEach(el => { if (el !== dd) el.classList.remove('open'); });
+    dd.classList.toggle('open');
+    e.stopPropagation();
+    return;
+  }
+
+  // Click on item: select it
+  const item = e.target.closest('.kb-dropdown-item');
+  if (item) {
+    const dd = item.closest('.kb-dropdown');
+    const selectId = dd.dataset.selectId;
+    const value = item.dataset.value;
+    const sel = document.getElementById(selectId);
+    sel.value = value;
+    refreshDropdownMenu(dd, selectId);
+    dd.classList.remove('open');
+    // Fire registered callback
+    runDropdownCallback(selectId);
+    e.stopPropagation();
+    return;
+  }
+
+  // Click outside: close all
+  if (!e.target.closest('.kb-dropdown')) {
+    document.querySelectorAll('.kb-dropdown.open').forEach(el => el.classList.remove('open'));
+  }
+});
+
+// ============================================================
+// PRIOR TYPE REGISTRY
+// To add a new prior type (e.g. LogNormal), add one entry here.
+// Each entry defines:
+//   fields:    list of {key, label} — the input fields shown for this type
+//   defaults:  function(def) -> object of default values for each field key
+//   readYaml:  function(id) -> the YAML dict to emit for this prior type
+// ============================================================
+const PRIOR_TYPES = {
+  Uniform: {
+    fields: [{key: "min", label: "min"}, {key: "max", label: "max"}],
+    defaults: (def) => ({ min: def.min || 0, max: def.max || 1 }),
+    readYaml: (id) => ({
+      dist_type: "Uniform",
+      min: parseFloat(document.getElementById(id + "_uniform_min").value),
+      max: parseFloat(document.getElementById(id + "_uniform_max").value),
+    }),
+  },
+  Delta: {
+    fields: [{key: "value", label: "value"}],
+    defaults: (def) => ({ value: def.value != null ? def.value : (def.min != null ? +((def.min + def.max) / 2).toFixed(4) : 0) }),
+    readYaml: (id) => ({
+      dist_type: "Delta",
+      value: parseFloat(document.getElementById(id + "_delta_value").value),
+    }),
+  },
+  LogUniform: {
+    fields: [{key: "min", label: "min"}, {key: "max", label: "max"}],
+    defaults: (def) => ({ min: def.min || 0.001, max: def.max || 1 }),
+    readYaml: (id) => ({
+      dist_type: "LogUniform",
+      min: parseFloat(document.getElementById(id + "_loguniform_min").value),
+      max: parseFloat(document.getElementById(id + "_loguniform_max").value),
+    }),
+  },
+};
+
+const PRIOR_TYPE_NAMES = Object.keys(PRIOR_TYPES);
+
+function makePriorRow(name, def, prefix, lockShape) {
+  if (lockShape === undefined) lockShape = true;
+  const id = prefix + "_" + name.replace(/[^a-zA-Z0-9]/g, "_");
+  let html = `<div class="kb-row"><label><code>${name}</code></label>`;
+  if (def.type === "Normal_shape") {
+    if (lockShape) {
+      const lockStyle = 'width:60px;background:#fff3f3;border:1px solid #e88;color:#999;cursor:not-allowed;';
+      if (def.cols === 1) {
+        html += `<span>Normal(0,1) shape:</span> <input type="number" id="${id}_rows" value="${def.rows}" readonly style="${lockStyle}width:80px;"><input type="hidden" id="${id}_cols" value="1">`;
+        html += ` <span class="kb-noise-hint" style="font-size:0.8em;color:#c44;">&#128274; set by bin count below</span>`;
+      } else {
+        html += `<span>Normal(0,1) shape:</span> <input type="number" id="${id}_rows" value="${def.rows}" readonly style="${lockStyle}"> x <input type="number" id="${id}_cols" value="${def.cols}" readonly style="${lockStyle}">`;
+        html += ` <span class="kb-noise-hint" style="font-size:0.8em;color:#c44;">&#128274; set by bin counts below</span>`;
+      }
+    } else {
+      const editStyle = 'width:80px;';
+      if (def.cols === 1) {
+        html += `<span>Normal(0,1) shape:</span> <input type="number" id="${id}_rows" value="${def.rows}" min="1" step="1" style="${editStyle}"><input type="hidden" id="${id}_cols" value="1">`;
+      } else {
+        html += `<span>Normal(0,1) shape:</span> <input type="number" id="${id}_rows" value="${def.rows}" min="1" step="1" style="width:60px;"> x <input type="number" id="${id}_cols" value="${def.cols}" min="1" step="1" style="width:60px;">`;
+      }
+    }
+  } else {
+    const selected = def.type || "Uniform";
+    html += makeCustomSelect(id + "_type", PRIOR_TYPE_NAMES, selected, `kbTogglePrior('${id}')`);
+    // Render a fields span for each prior type
+    for (const [typeName, spec] of Object.entries(PRIOR_TYPES)) {
+      const defs = spec.defaults(def);
+      const vis = typeName === selected ? '' : 'style="display:none"';
+      html += `<span class="kb-prior-fields" id="${id}_${typeName.toLowerCase()}" ${vis}>`;
+      for (const f of spec.fields) {
+        html += ` ${f.label}: <input type="number" id="${id}_${typeName.toLowerCase()}_${f.key}" value="${defs[f.key] != null ? defs[f.key] : 0}" step="any">`;
+      }
+      html += `</span>`;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+
+function kbTogglePrior(id) {
+  const t = document.getElementById(id + "_type").value;
+  for (const typeName of PRIOR_TYPE_NAMES) {
+    const el = document.getElementById(id + "_" + typeName.toLowerCase());
+    if (el) el.style.display = typeName === t ? "" : "none";
+  }
+}
+
+function makeBinRow(name, def) {
+  const id = "bin_" + name;
+  return `<div class="kb-row">
+    <label><code>${name}</code></label>
+    min: <input type="number" id="${id}_min" value="${def.min}" step="any">
+    max: <input type="number" id="${id}_max" value="${def.max}" step="any">
+    num: <input type="number" id="${id}_num" value="${def.num}" min="1" onchange="syncNoiseShape()">
+  </div>`;
+}
+
+function setDropdownValue(selectId, value) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.value = value;
+  const dd = document.getElementById(selectId + "__dd");
+  if (dd) {
+    refreshDropdownMenu(dd, selectId);
+    dd.classList.remove('open');
+  }
+}
+
+function toggleAllPriors(prefix, targetType) {
+  document.querySelectorAll(`select[id^="${prefix}_"][id$="_type"]`).forEach(sel => {
+    setDropdownValue(sel.id, targetType);
+    const base = sel.id.replace("_type", "");
+    kbTogglePrior(base);
+  });
+}
+
+function toggleAllMassPriors(targetType) {
+  const m = MODELS[selectedModel];
+  for (const group of Object.keys(m.mass_priors)) {
+    document.querySelectorAll(`select[id^="${group}_"][id$="_type"]`).forEach(sel => {
+      setDropdownValue(sel.id, targetType);
+      const base = sel.id.replace("_type", "");
+      kbTogglePrior(base);
+    });
+  }
+}
+
+function resetPriorToDefault(prefix, name, def) {
+  const id = prefix + "_" + name.replace(/[^a-zA-Z0-9]/g, "_");
+  if (def.type === "Normal_shape") return;
+  const typeName = def.type || "Uniform";
+  setDropdownValue(id + "_type", typeName);
+  kbTogglePrior(id);
+  // Set field values from registry defaults
+  const spec = PRIOR_TYPES[typeName];
+  if (spec) {
+    const defs = spec.defaults(def);
+    const tn = typeName.toLowerCase();
+    for (const f of spec.fields) setVal(id + "_" + tn + "_" + f.key, defs[f.key]);
+  }
+}
+
+function resetPriorsToDefault(prefix, defaults) {
+  for (const [k, v] of Object.entries(defaults)) resetPriorToDefault(prefix, k, v);
+}
+
+function resetMassPriorsToDefault() {
+  const m = MODELS[selectedModel];
+  for (const [group, params] of Object.entries(m.mass_priors)) {
+    for (const [k, v] of Object.entries(params)) resetPriorToDefault(group, k, v);
+  }
+}
+
+function updateGibbsStepVisibility() {
+  const el = document.getElementById("sampler_gibbs_sites");
+  const active = el && el.value.trim();
+  ["kb-gibbs-step-row", "kb-gibbs-num-steps-row"].forEach(id => {
+    const row = document.getElementById(id);
+    if (row) row.style.display = active ? "" : "none";
+  });
+  const tip = document.getElementById("kb-gibbs-tip");
+  if (tip) tip.style.display = active ? "" : "none";
+}
+
+function isSviEnabled() {
+  const steps = parseInt((document.getElementById("sampler_num_svi_steps") || {}).value) || 0;
+  const samples = parseInt((document.getElementById("sampler_num_svi_samples") || {}).value) || 0;
+  return steps > 0 && samples > 0;
+}
+
+function updateSviGuideVisibility() {
+  const sviOn = isSviEnabled();
+  const guideType = (document.getElementById("sampler_guide_type") || {}).value;
+  // guide_type is only selectable when SVI is enabled
+  const guideRow = document.getElementById("kb-guide-type-row");
+  if (guideRow) guideRow.style.display = sviOn ? "" : "none";
+  // Flow guide sizing is visible when SVI is on and a flow guide is selected.
+  const isFlowGuide = guideType === "AutoIAFNormal" || guideType === "AutoBNAFNormal";
+  const hiddenRow = document.getElementById("kb-guide-hidden-row");
+  if (hiddenRow) hiddenRow.style.display = (sviOn && isFlowGuide) ? "" : "none";
+  const hiddenLabel = document.getElementById("kb-guide-hidden-label");
+  const hiddenInput = document.getElementById("sampler_guide_hidden");
+  const hiddenDesc = document.getElementById("kb-guide-hidden-desc");
+  if (!hiddenLabel || !hiddenInput || !hiddenDesc) return;
+  if (guideType === "AutoIAFNormal") {
+    hiddenLabel.textContent = "guide_hidden_dims";
+    hiddenInput.placeholder = "e.g. 128, 128";
+    if (!hiddenInput.value) hiddenInput.value = "128, 128";
+    hiddenDesc.textContent = "Hidden layer sizes for AutoIAFNormal (comma-separated integers)";
+  } else if (guideType === "AutoBNAFNormal") {
+    hiddenLabel.textContent = "guide_hidden_factors";
+    hiddenInput.placeholder = "e.g. 10, 10, 10";
+    if (!hiddenInput.value) hiddenInput.value = "10, 10, 10";
+    hiddenDesc.textContent = "Hidden layer factors for AutoBNAFNormal (comma-separated integers, per latent dimension)";
+  } else {
+    hiddenLabel.textContent = "guide_hidden_dims";
+    hiddenInput.placeholder = "";
+    hiddenDesc.textContent = "Hidden flow-guide sizes";
+  }
+}
+
+function parseGuideSizeList(rawValue) {
+  return (rawValue || "")
+    .split(",")
+    .map(s => parseInt(s.trim(), 10))
+    .filter(n => !isNaN(n));
+}
+
+function syncNoiseShape() {
+  const m = MODELS[selectedModel];
+  const mapping = m.noise_shape_bins;
+  if (!mapping) return;
+
+  // Find the noise shape input IDs by scanning mass_priors for Normal_shape entries
+  for (const [group, params] of Object.entries(m.mass_priors)) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v.type !== "Normal_shape") continue;
+      const id = group + "_" + k.replace(/[^a-zA-Z0-9]/g, "_");
+
+      if (mapping.rows) {
+        const numEl = document.getElementById("bin_" + mapping.rows + "_num");
+        const rowEl = document.getElementById(id + "_rows");
+        if (numEl && rowEl) rowEl.value = numEl.value;
+      }
+      if (mapping.cols && mapping.cols !== undefined) {
+        const numEl = document.getElementById("bin_" + mapping.cols + "_num");
+        const colEl = document.getElementById(id + "_cols");
+        if (numEl && colEl) colEl.value = numEl.value;
+      }
+    }
+  }
+}
+
+function makeSamplerRow(name, obj) {
+  const id = "sampler_" + name;
+  const step = Number.isInteger(obj.val) ? "1" : "any";
+  const extra = (name === "num_svi_steps" || name === "num_svi_samples") ? "updateSviGuideVisibility();" : "";
+  return `<div class="kb-row"><label><code>${name}</code></label>
+    <input type="number" id="${id}" value="${obj.val}" step="${step}" oninput="${extra}" onchange="selectedSamplerPreset=null;renderSamplerPresets();${extra}">
+    <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">${obj.desc}</span></div>`;
+}
+
+let _initialized = false;
+
+function kbUpdateUI() {
+  const m = MODELS[selectedModel];
+
+  // Cosmology and redshift: only render once (preserve user edits on model switch)
+  if (!_initialized) {
+    let html = "";
+    for (const [k, v] of Object.entries(COSMO_PRIORS)) html += makePriorRow(k, v, "cosmo");
+    document.getElementById("kb-cosmo-priors").innerHTML = html;
+
+    html = "";
+    for (const [k, v] of Object.entries(REDSHIFT_PRIORS)) html += makePriorRow(k, v, "rz");
+    document.getElementById("kb-redshift-priors").innerHTML = html;
+  }
+
+  // Mass priors: always re-render (model-specific)
+  let html = "";
+  for (const [group, params] of Object.entries(m.mass_priors)) {
+    html += `<h4 style="margin:0.8em 0 0.3em;color:var(--color-foreground-secondary,#555);">${group}</h4>`;
+    for (const [k, v] of Object.entries(params)) html += makePriorRow(k, v, group);
+  }
+  document.getElementById("kb-mass-priors").innerHTML = html;
+
+  // Binning: always re-render (model-specific)
+  html = "";
+  for (const [k, v] of Object.entries(m.bins)) html += makeBinRow(k, v);
+  document.getElementById("kb-binning").innerHTML = html;
+
+  // Sampler: only render once (preserve user edits and preset on model switch)
+  if (!_initialized) {
+    html = "";
+    for (const [k, v] of Object.entries(SAMPLER_DEFAULTS)) html += makeSamplerRow(k, v);
+    html += `<div class="kb-row" style="margin-top:0.6em;display:none;" id="kb-guide-type-row">
+      <label><code>guide_type</code></label>
+      ${makeCustomSelect("sampler_guide_type",
+        ["AutoLowRankMultivariateNormal", "AutoIAFNormal", "AutoBNAFNormal"],
+        "AutoLowRankMultivariateNormal", function() { updateSviGuideVisibility(); selectedSamplerPreset=null; renderSamplerPresets(); })}
+      <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">SVI guide architecture</span>
+    </div>`;
+    html += `<div class="kb-row" id="kb-guide-hidden-row" style="display:none;">
+      <label><code id="kb-guide-hidden-label">guide_hidden_dims</code></label>
+      <input type="text" id="sampler_guide_hidden" value="" placeholder="e.g. 128, 128" style="width:160px;" onchange="selectedSamplerPreset=null;renderSamplerPresets();">
+      <span id="kb-guide-hidden-desc" style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Hidden layer sizes for flow-based SVI guides</span>
+    </div>`;
+    html += `<div class="kb-row" style="margin-top:0.6em;">
+      <label><code>gibbs_sites</code></label>
+      <input type="text" id="sampler_gibbs_sites" value="" style="width:200px;" onchange="selectedSamplerPreset=null;renderSamplerPresets();updateGibbsStepVisibility();">
+      <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Comma-separated params for Gibbs MH (e.g. "h"). Leave empty to disable.</span>
+    </div>`;
+    html += `<div class="kb-row" id="kb-gibbs-step-row" style="display:none;">
+      <label><code>gibbs_mh_step_size</code></label>
+      <input type="number" id="sampler_gibbs_mh_step_size" value="0.01" step="any" onchange="selectedSamplerPreset=null;renderSamplerPresets();">
+      <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">MH proposal step size for Gibbs sites</span>
+    </div>`;
+    html += `<div class="kb-row" id="kb-gibbs-num-steps-row" style="display:none;">
+      <label><code>gibbs_num_mh_steps</code></label>
+      <input type="number" id="sampler_gibbs_num_mh_steps" value="10" min="1" step="1" onchange="selectedSamplerPreset=null;renderSamplerPresets();">
+      <span style="font-size:0.82em;color:var(--color-foreground-secondary,#888);margin-left:0.5em;">Number of inner MH steps per HMC iteration (increase to reduce autocorrelation)</span>
+    </div>`;
+    html += `<p style="font-size:0.85em;color:var(--color-foreground-secondary,#888);margin-top:0.8em;">
+      <strong>Tip:</strong> Set <code>num_svi_steps</code> to 0 if you do not need variational inference initialization.
+      For SVI, choose a <code>guide_type</code>: <code>AutoLowRankMultivariateNormal</code> (default, fast),
+      <code>AutoIAFNormal</code> (normalizing flow — set <code>guide_hidden_dims</code> to control hidden layer sizes),
+      or <code>AutoBNAFNormal</code> (block neural autoregressive flow — set <code>guide_hidden_factors</code> to control hidden factors).
+      <span id="kb-gibbs-tip">Set <code>gibbs_sites</code> to e.g. <code>h</code> to sample cosmology parameters in a separate Gibbs step, which can help with GP models.
+      With large catalogs (&gt;500 events) and Gibbs sites, step size collapse during warmup can occur.</span></p>`;
+    document.getElementById("kb-sampler").innerHTML = html;
+    renderSamplerPresets();
+    updateGibbsStepVisibility();
+    updateSviGuideVisibility();
+  }
+
+  // Sync noise shape to match bin counts
+  syncNoiseShape();
+
+  _initialized = true;
+}
+
+function readPrior(prefix, name, def) {
+  const id = prefix + "_" + name.replace(/[^a-zA-Z0-9]/g, "_");
+  if (def.type === "Normal_shape") {
+    const r = parseInt(document.getElementById(id + "_rows").value);
+    const c = parseInt(document.getElementById(id + "_cols").value);
+    if (c === 1) return { dist_type: "Normal", loc: 0.0, scale: 1, shape: [r] };
+    return { dist_type: "Normal", loc: 0.0, scale: 1, shape: [r, c] };
+  }
+  const t = document.getElementById(id + "_type").value;
+  const spec = PRIOR_TYPES[t];
+  if (!spec) return { dist_type: t };
+  const result = spec.readYaml(id);
+  // Propagate shape array from registry definition (e.g. Uniform with shape for vector params)
+  if (def.shape) result.shape = def.shape;
+  return result;
+}
+
+function yamlObj(obj, indent) {
+  let lines = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof v === "object" && !Array.isArray(v) && v !== null) {
+      lines.push(" ".repeat(indent) + k + ":");
+      lines.push(yamlObj(v, indent + 2));
+    } else if (Array.isArray(v)) {
+      lines.push(" ".repeat(indent) + k + ": [" + v.join(", ") + "]");
+    } else if (typeof v === "string") {
+      lines.push(" ".repeat(indent) + k + ": " + v);
+    } else {
+      lines.push(" ".repeat(indent) + k + ": " + v);
+    }
+  }
+  return lines.join("\n");
+}
+
+function kbGenerate() {
+  const m = MODELS[selectedModel];
+
+  // Build kwargs_priors
+  let priors = { cosmology: {}, rate: {}, redshift: {} };
+  for (const k of Object.keys(COSMO_PRIORS)) priors.cosmology[k] = readPrior("cosmo", k, COSMO_PRIORS[k]);
+  for (const k of Object.keys(REDSHIFT_PRIORS)) priors.redshift[k] = readPrior("rz", k, REDSHIFT_PRIORS[k]);
+  for (const [group, params] of Object.entries(m.mass_priors)) {
+    priors[group] = {};
+    for (const [k, v] of Object.entries(params)) {
+      const realName = k.replace(" [shape]", "");
+      priors[group][realName] = readPrior(group, k, v);
+    }
+  }
+  // Cosmology model-specific priors (modified gravity)
+  const cm = COSMO_MODELS[selectedCosmoModel];
+  if (cm && cm.cosmo_priors) {
+    for (const [group, params] of Object.entries(cm.cosmo_priors)) {
+      priors[group] = {};
+      for (const [k, v] of Object.entries(params)) {
+        const realName = k.replace(" [shape]", "");
+        priors[group][realName] = readPrior("cmg_" + group, k, v);
+      }
+    }
+  }
+
+  // Build bins
+  let bins = {};
+  for (const k of Object.keys(m.bins)) {
+    const id = "bin_" + k;
+    bins[k] = {
+      min: parseFloat(document.getElementById(id + "_min").value),
+      max: parseFloat(document.getElementById(id + "_max").value),
+      num: parseInt(document.getElementById(id + "_num").value),
+    };
+  }
+  bins.mass_grid_interpolation = document.getElementById("kb-mass-interp").value;
+  bins.redshift_grid_interpolation = document.getElementById("kb-redshift-interp").value;
+
+  // Sampler
+  let sampler = {};
+  for (const k of Object.keys(SAMPLER_DEFAULTS)) {
+    const v = document.getElementById("sampler_" + k).value;
+    sampler[k] = (k === "target_accept_prob" || k === "gibbs_mh_step_size") ? parseFloat(v) : parseInt(v);
+  }
+  // Add guide_type (for SVI initialization)
+  const guideTypeEl = document.getElementById("sampler_guide_type");
+  if (guideTypeEl) {
+    sampler.guide_type = guideTypeEl.value;
+    const guideHidden = parseGuideSizeList((document.getElementById("sampler_guide_hidden") || {}).value);
+    if (guideTypeEl.value === "AutoIAFNormal" && guideHidden.length > 0) {
+      sampler.guide_hidden_dims = guideHidden;
+    } else if (guideTypeEl.value === "AutoBNAFNormal" && guideHidden.length > 0) {
+      sampler.guide_hidden_factors = guideHidden;
+    }
+  }
+  // Add gibbs_sites and step size (if set, enables HMCGibbs)
+  const gibbsSitesStr = (document.getElementById("sampler_gibbs_sites") || {}).value || "";
+  const gibbsSites = gibbsSitesStr.split(",").map(s => s.trim()).filter(s => s);
+  if (gibbsSites.length > 0) {
+    sampler.gibbs_sites = gibbsSites;
+    sampler.gibbs_mh_step_size = parseFloat(document.getElementById("sampler_gibbs_mh_step_size").value);
+    sampler.gibbs_num_mh_steps = parseInt(document.getElementById("sampler_gibbs_num_mh_steps").value);
+  }
+
+  // Build full config
+  let config = {
+    catalog_metadata: { healpix_discretization_3d: {} },
+    cosmology_model_name: selectedCosmoModel,
+    cosmology_numerics: {
+      z_min: parseFloat(document.getElementById("kb-zmin").value),
+      z_max: parseFloat(document.getElementById("kb-zmax").value),
+      z_steps: parseInt(document.getElementById("kb-zsteps").value),
+    },
+    kwargs_data: {},
+    distribution_names: m.dist_names,
+    kwargs_priors: priors,
+    kwargs_sampler: sampler,
+    likelihood_evaluation: {
+      posterior_samples_batch_size: parseInt(document.getElementById("kb-ps-batch").value),
+      injections_batch_size: parseInt(document.getElementById("kb-inj-batch").value),
+      nonfinite_log_prob_policy: document.getElementById("kb-nonfinite-policy").value,
+    },
+    results_path: document.getElementById("kb-results-path").value,
+    bins: bins,
+  };
+
+  document.getElementById("kb-yaml-output").value = yamlObj(config, 0);
+}
+
+let _downloadCount = 0;
+
+function kbDownload() {
+  kbGenerate();
+  const blob = new Blob([document.getElementById("kb-yaml-output").value], { type: "text/yaml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  // Use model name in filename; append counter to avoid overwrites
+  let fname = "kwargs_analysis";
+  if (_downloadCount > 0) fname += "_" + _downloadCount;
+  fname += ".yaml";
+  _downloadCount++;
+  a.download = fname;
+  a.click();
+}
+
+// --- Simple YAML parser (handles the flat/nested structure we produce) ---
+function parseSimpleYaml(text) {
+  const result = {};
+  const stack = [{obj: result, indent: -1}];
+  for (const raw of text.split("\n")) {
+    if (!raw.trim() || raw.trim().startsWith("#")) continue;
+    const indent = raw.search(/\S/);
+    const line = raw.trim();
+    // Pop stack to find parent
+    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) stack.pop();
+    const parent = stack[stack.length - 1].obj;
+    const match = line.match(/^([^:]+):\s*(.*)/);
+    if (!match) continue;
+    const key = match[1].trim();
+    let val = match[2].trim();
+    if (val === "" || val === "null") {
+      // Nested object
+      parent[key] = {};
+      stack.push({obj: parent[key], indent: indent});
+    } else if (val.startsWith("[") && val.endsWith("]")) {
+      // Inline array
+      parent[key] = val.slice(1, -1).split(",").map(s => {
+        s = s.trim();
+        return isNaN(Number(s)) ? s : Number(s);
+      });
+    } else if (val === "true") { parent[key] = true; }
+    else if (val === "false") { parent[key] = false; }
+    else if (!isNaN(Number(val)) && val !== "") { parent[key] = Number(val); }
+    else { parent[key] = val; }
+  }
+  return result;
+}
+
+function kbUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const cfg = parseSimpleYaml(e.target.result);
+    applyUploadedConfig(cfg);
+    // Show the raw YAML in the output area
+    document.getElementById("kb-yaml-output").value = e.target.result;
+  };
+  reader.readAsText(file);
+  // Reset so same file can be re-uploaded
+  event.target.value = "";
+}
+
+function applyUploadedConfig(cfg) {
+  // 1. Detect and select mass model from distribution_names
+  const dn = cfg.distribution_names || {};
+  const sfm = dn.source_frame_masses || "";
+  if (sfm && sfm in MODELS) {
+    selectedModel = sfm;
+    _initialized = false;
+    renderModelCards();
+    kbUpdateUI();
+  }
+
+  // 2. Cosmology priors
+  const cp = (cfg.kwargs_priors || {}).cosmology || {};
+  for (const [k, v] of Object.entries(cp)) {
+    const id = "cosmo_" + k;
+    const typeEl = document.getElementById(id + "_type");
+    if (!typeEl) continue;
+    setDropdownValue(id + "_type", v.dist_type || "Delta");
+    kbTogglePrior(id);
+    if (v.dist_type === "Uniform") {
+      setVal(id + "_uniform_min", v.min);
+      setVal(id + "_uniform_max", v.max);
+    } else if (v.dist_type === "LogUniform") {
+      setVal(id + "_loguniform_min", v.min);
+      setVal(id + "_loguniform_max", v.max);
+    } else {
+      setVal(id + "_delta_value", v.value);
+    }
+  }
+
+  // 3. Redshift priors
+  const rp = (cfg.kwargs_priors || {}).redshift || {};
+  for (const [k, v] of Object.entries(rp)) {
+    const id = "rz_" + k;
+    const typeEl = document.getElementById(id + "_type");
+    if (!typeEl) continue;
+    setDropdownValue(id + "_type", v.dist_type || "Delta");
+    kbTogglePrior(id);
+    if (v.dist_type === "Uniform") {
+      setVal(id + "_uniform_min", v.min);
+      setVal(id + "_uniform_max", v.max);
+    } else if (v.dist_type === "LogUniform") {
+      setVal(id + "_loguniform_min", v.min);
+      setVal(id + "_loguniform_max", v.max);
+    } else {
+      setVal(id + "_delta_value", v.value);
+    }
+  }
+
+  // 4. Mass priors
+  const kp = cfg.kwargs_priors || {};
+  const m = MODELS[selectedModel];
+  for (const [group, params] of Object.entries(m.mass_priors)) {
+    const gp = kp[group] || {};
+    for (const [k, def] of Object.entries(params)) {
+      const safeK = k.replace(/[^a-zA-Z0-9]/g, "_");
+      const id = group + "_" + safeK;
+      const v = gp[k];
+      if (!v) continue;
+      if (def.type === "Normal_shape") {
+        // Noise shape: set from shape array
+        if (v.shape) {
+          setVal(id + "_rows", v.shape[0]);
+          if (v.shape.length > 1) setVal(id + "_cols", v.shape[1]);
+        }
+      } else {
+        const typeEl = document.getElementById(id + "_type");
+        if (!typeEl) continue;
+        setDropdownValue(id + "_type", v.dist_type || "Delta");
+        kbTogglePrior(id);
+        if (v.dist_type === "Uniform") {
+          setVal(id + "_uniform_min", v.min);
+          setVal(id + "_uniform_max", v.max);
+        } else if (v.dist_type === "LogUniform") {
+          setVal(id + "_loguniform_min", v.min);
+          setVal(id + "_loguniform_max", v.max);
+        } else {
+          setVal(id + "_delta_value", v.value);
+        }
+      }
+    }
+  }
+
+  // 5. Bins
+  const bins = cfg.bins || {};
+  for (const [k, v] of Object.entries(bins)) {
+    setVal("bin_" + k + "_min", v.min);
+    setVal("bin_" + k + "_max", v.max);
+    setVal("bin_" + k + "_num", v.num);
+  }
+  syncNoiseShape();
+
+  // 6. Sampler
+  const sampler = cfg.kwargs_sampler || {};
+  for (const k of Object.keys(SAMPLER_DEFAULTS)) {
+    if (k in sampler) setVal("sampler_" + k, sampler[k]);
+  }
+  if (sampler.gibbs_sites) {
+    const gs = Array.isArray(sampler.gibbs_sites) ? sampler.gibbs_sites.join(", ") : sampler.gibbs_sites;
+    setVal("sampler_gibbs_sites", gs);
+  }
+  if (sampler.gibbs_mh_step_size != null) {
+    setVal("sampler_gibbs_mh_step_size", sampler.gibbs_mh_step_size);
+  }
+  if (sampler.gibbs_num_mh_steps != null) {
+    setVal("sampler_gibbs_num_mh_steps", sampler.gibbs_num_mh_steps);
+  }
+  if (sampler.guide_type) {
+    setDropdownValue("sampler_guide_type", sampler.guide_type);
+  }
+  if (sampler.guide_hidden_dims) {
+    const hd = Array.isArray(sampler.guide_hidden_dims) ? sampler.guide_hidden_dims.join(", ") : sampler.guide_hidden_dims;
+    setVal("sampler_guide_hidden", hd);
+  }
+  if (sampler.guide_hidden_factors) {
+    const hf = Array.isArray(sampler.guide_hidden_factors) ? sampler.guide_hidden_factors.join(", ") : sampler.guide_hidden_factors;
+    setVal("sampler_guide_hidden", hf);
+  }
+  updateGibbsStepVisibility();
+  updateSviGuideVisibility();  // still needed on load to show/hide hidden_factors based on guide_type
+  selectedSamplerPreset = null;
+  renderSamplerPresets();
+
+  // 7. Misc
+  const cn = cfg.cosmology_numerics || {};
+  if (cn.z_min != null) setVal("kb-zmin", cn.z_min);
+  if (cn.z_max != null) setVal("kb-zmax", cn.z_max);
+  if (cn.z_steps != null) setVal("kb-zsteps", cn.z_steps);
+  if (cfg.cosmology_model_name && cfg.cosmology_model_name in COSMO_MODELS) {
+    selectedCosmoModel = cfg.cosmology_model_name;
+    renderCosmoModelCards();
+    renderCosmoModelPriors();
+    // Apply uploaded cosmology model priors
+    const cm = COSMO_MODELS[selectedCosmoModel];
+    if (cm && cm.cosmo_priors) {
+      for (const [group, params] of Object.entries(cm.cosmo_priors)) {
+        const gp = kp[group] || {};
+        for (const [k, def] of Object.entries(params)) {
+          const safeK = k.replace(/[^a-zA-Z0-9]/g, "_");
+          const id = "cmg_" + group + "_" + safeK;
+          const v = gp[k];
+          if (!v) continue;
+          if (def.type === "Normal_shape") {
+            if (v.shape) {
+              setVal(id + "_rows", v.shape[0]);
+              if (v.shape.length > 1) setVal(id + "_cols", v.shape[1]);
+            }
+          } else {
+            const typeEl = document.getElementById(id + "_type");
+            if (!typeEl) continue;
+            setDropdownValue(id + "_type", v.dist_type || "Delta");
+            kbTogglePrior(id);
+            if (v.dist_type === "Uniform") {
+              setVal(id + "_uniform_min", v.min);
+              setVal(id + "_uniform_max", v.max);
+            } else if (v.dist_type === "LogUniform") {
+              setVal(id + "_loguniform_min", v.min);
+              setVal(id + "_loguniform_max", v.max);
+            } else {
+              setVal(id + "_delta_value", v.value);
+            }
+          }
+        }
+      }
+    }
+  }
+  if (cfg.results_path) setVal("kb-results-path", cfg.results_path);
+
+  // 8. Likelihood
+  const le = cfg.likelihood_evaluation || {};
+  if (le.posterior_samples_batch_size != null) setVal("kb-ps-batch", le.posterior_samples_batch_size);
+  if (le.injections_batch_size != null) setVal("kb-inj-batch", le.injections_batch_size);
+  if (le.nonfinite_log_prob_policy != null) setVal("kb-nonfinite-policy", le.nonfinite_log_prob_policy);
+  const binsCfg = cfg.bins || {};
+  if (binsCfg.mass_grid_interpolation != null) setVal("kb-mass-interp", binsCfg.mass_grid_interpolation);
+  if (binsCfg.redshift_grid_interpolation != null) setVal("kb-redshift-interp", binsCfg.redshift_grid_interpolation);
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el && val != null) el.value = val;
+}
+
+// Initialize
+if (!(selectedModel in MODELS) && Object.keys(MODELS).length > 0) selectedModel = Object.keys(MODELS)[0];
+if (!(selectedCosmoModel in COSMO_MODELS) && Object.keys(COSMO_MODELS).length > 0) selectedCosmoModel = Object.keys(COSMO_MODELS)[0];
+renderModelCards();
+renderCosmoModelCards();
+kbUpdateUI();
+renderCosmoModelPriors();
+syncNoiseShape();
+
+// Live-update YAML on any input/select change
+const kbContainer = document.querySelector('.kb-container');
+kbContainer.addEventListener('input', () => kbGenerate());
+kbContainer.addEventListener('change', () => kbGenerate());
+// Also observe DOM changes (new prior rows added dynamically)
+new MutationObserver(() => kbGenerate()).observe(kbContainer, { childList: true, subtree: true });
+// Initial generation
+kbGenerate();
+
+// --- Drag-to-adjust for number inputs (Blender-style) ---
+// Drag left/right on any number input to change its value.
+// Click without dragging focuses the input for keyboard entry.
+(function() {
+  let drag = null;
+  const DEADZONE = 3;
+
+  kbContainer.addEventListener('mousedown', e => {
+    const inp = e.target.closest('input[type="number"]');
+    if (!inp) return;
+    drag = { inp, x0: e.clientX, v0: parseFloat(inp.value) || 0, moved: false };
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x0;
+    if (!drag.moved && Math.abs(dx) < DEADZONE) return;
+    drag.moved = true;
+    document.body.style.cursor = 'ew-resize';
+
+    const stepAttr = drag.inp.step;
+    const stepNum = (stepAttr && stepAttr !== 'any') ? parseFloat(stepAttr) : null;
+    const isInt = stepNum != null && stepNum === Math.floor(stepNum);
+    const sens = Math.max(Math.abs(drag.v0) * 0.005, stepNum || 0.001);
+    let v = drag.v0 + dx * sens;
+
+    if (isInt) v = Math.round(v / stepNum) * stepNum;
+    if (drag.inp.min !== '') v = Math.max(v, parseFloat(drag.inp.min));
+    if (drag.inp.max !== '') v = Math.min(v, parseFloat(drag.inp.max));
+    drag.inp.value = isInt ? v : +v.toPrecision(6);
+    drag.inp.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!drag) return;
+    document.body.style.cursor = '';
+    if (!drag.moved) { drag.inp.focus(); drag.inp.select(); }
+    drag = null;
+  });
+})();
+</script>

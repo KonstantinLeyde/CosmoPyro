@@ -1,0 +1,121 @@
+catalog_metadata:
+  healpix_discretization_3d:
+
+cosmology_model_name: FlatLambdaCDM
+cosmology_numerics:
+  z_min: 0.00001
+  z_max: 8
+  z_steps: 200000
+kwargs_data:
+
+distribution_names:
+  source_frame_masses: fourier_gp_2D_logMdelta
+  redshift: MadauDickinson
+kwargs_priors:
+  cosmology:
+    h:
+      dist_type: Uniform
+      min: 0.1
+      max: 1.2
+    Omega_m:
+      dist_type: Delta
+      value: 0.3
+  rate:
+
+  redshift:
+    gamma:
+      dist_type: Uniform
+      min: -2
+      max: 5
+    kappa:
+      dist_type: Uniform
+      min: 0
+      max: 6
+    zp:
+      dist_type: Uniform
+      min: 0
+      max: 4
+  source_frame_masses:
+    # gaussian_F_whitened_spatial_marginal:
+    #   dist_type: Normal
+    #   loc: 0
+    #   scale: 1
+    #   shape: [60]
+    gaussian_F_whitened_spatial:
+      dist_type: Normal
+      loc: 0
+      scale: 1
+      shape: [250, 100]
+    mass_min:
+      dist_type: Uniform
+      min: 3.5
+      max: 10.0
+    mass_max:
+      dist_type: Uniform
+      min: 40
+      max: 150
+    sigma_low_fractional:
+      dist_type: LogUniform
+      min: 0.0001
+      max: 0.1
+    sigma_high_fractional:
+      dist_type: LogUniform
+      min: 0.003
+      max: 0.3
+    power_spectrum_amplitude:
+      dist_type: LogUniform
+      min: 30
+      max: 300
+    power_spectrum_cutoff:
+      dist_type: LogUniform
+      min: 10
+      max: 300
+    power_spectrum_relative_scale_log_mass_total_s_to_minus_log_mass_ratio:
+      dist_type: Delta
+      value: 1.0
+    power_law_reference_mass_1_s:
+      dist_type: Uniform
+      min: -4.0
+      max: -1.5
+    power_law_reference_mass_ratio:
+      dist_type: Delta
+      value: 1.0
+    # power_spectrum_amplitude_marginal:
+    #   dist_type: Delta
+    #   value: 1.0
+    # power_spectrum_cutoff_marginal:
+    #   dist_type: Delta
+    #   value: 300.0
+kwargs_sampler:
+  num_chains: 1
+  max_tree_depth: 10
+  target_accept_prob: 0.8
+  # num_svi_steps: 1000
+  # num_svi_samples: 1000
+  # guide_type: AutoLowRankMVN_AutoNormal
+  # guide_hidden_factors: [128, 128]
+  # gibbs_sites: [h]
+  # gibbs_mh_step_size: 0.01
+  # gibbs_num_mh_steps: 10
+  desired_energy_variance: 1e-4
+likelihood_evaluation:
+  posterior_samples_batch_size: 10000000
+  injections_batch_size: 50000000
+  penalty_factor_relative_variance: 100.0
+
+results_path: .
+bins:
+  log_mass_total_s:
+    min: 0.6
+    max: 7.0
+    num: 250
+  minus_log_mass_ratio:
+    min: 0
+    max: 4.2
+    num: 100
+  redshift:
+    min: 0
+    max: 8
+    num: 3000
+  # redshift_grid_interpolation: linear
+  # mass_grid_interpolation: linear

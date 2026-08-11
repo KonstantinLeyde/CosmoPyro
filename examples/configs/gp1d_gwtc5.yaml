@@ -1,0 +1,130 @@
+catalog_metadata:
+  healpix_discretization_3d:
+    # nside: 1
+
+cosmology_model_name: FlatLambdaCDM
+cosmology_numerics:
+  z_max: 7.5
+  z_min: 1.0e-05
+  z_steps: 200000
+
+kwargs_data: {}
+
+distribution_names:
+  mass_1_s: fourier_gp_1D
+  mass_ratio: mass_ratio_running_power_law_in_log
+  redshift: MadauDickinson
+
+kwargs_priors:
+  cosmology:
+    h:
+      dist_type: Uniform
+      min: 0.1
+      max: 1.2
+    Omega_m:
+      dist_type: Delta
+      value: 0.3
+
+  rate: {}
+
+  redshift:
+    gamma:
+      dist_type: Uniform
+      min: -2
+      max: 5
+    kappa:
+      dist_type: Uniform
+      max: 6.0
+      min: 0.0
+    zp:
+      dist_type: Uniform
+      max: 4.0
+      min: 0.0
+
+  mass_1_s:
+    gaussian_F_whitened_spatial:
+      dist_type: Normal
+      loc: 0.0
+      scale: 1
+      shape: [2000,]  
+    alpha_0:
+      dist_type: Uniform
+      max: -1.5
+      min: -6.0
+
+    mass_min:
+      dist_type: Uniform
+      max: 7
+      min: 2
+    sigma_low_fractional:
+      dist_type: LogUniform
+      min: 0.0001
+      max: 0.1
+    sigma_high_fractional:
+      dist_type: LogUniform
+      min: 0.003
+      max: 0.3
+    mass_max:
+      dist_type: Uniform
+      max: 220
+      min: 40
+    power_spectrum_amplitude:
+      dist_type: LogUniform
+      min: 30
+      max: 300
+    power_spectrum_cutoff:
+      dist_type: LogUniform
+      min: 10
+      max: 300
+
+  mass_ratio:
+    beta_0:
+      dist_type: Uniform
+      max: 4.0
+      min: -2.0
+    beta_1:
+      dist_type: Uniform
+      max: 0.1
+      min: -0.1
+    sigma_mass_cutoff_mass_2:
+      dist_type: Uniform
+      max: 10.0
+      min: 0.1
+    mass_ratio_running_zero_point:
+      dist_type: Delta
+      value: 10.0
+
+kwargs_sampler:
+  gibbs_mode: 0
+  max_tree_depth: 10
+  num_chains: 1
+  # num_posterior_samples: 500
+  # num_posterior_samples_per_batch: 500
+  # num_warmup: 500
+  target_accept_prob: 0.8
+  num_svi_samples: 0
+  num_svi_steps: 0
+  # desired_energy_variance: 1e-5
+
+results_path: .
+
+likelihood_evaluation:
+  posterior_samples_batch_size: 50000000
+  injections_batch_size: 50000000
+  penalty_factor_relative_variance: 100.0
+  save_effective_sample_sizes: False
+
+bins:
+  mass_1_s:
+    max: 500.0
+    min: 0.9
+    num: 2000
+  mass_ratio:
+    max: 1.0
+    min: 0.01
+    num: 1000
+  redshift:
+    max: 7.5
+    min: 0.0
+    num: 5000
+  # redshift_grid_interpolation: linear

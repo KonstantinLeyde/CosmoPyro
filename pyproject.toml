@@ -1,42 +1,103 @@
 [build-system]
-requires = ["setuptools>=61.0", "setuptools-scm[toml]>=6.2", "wheel"]
+# setuptools>=77 is needed for the PEP 639 `license`/`license-files` fields.
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cosmopyro"
-version = "0.0.1a1"
 authors = [
-  { name="Konstantin Leyde", email="konstantin.leyde@gmail.com" },
+    {name = "Konstantin Leyde", email = "Konstantin.Leyde@gmail.com"},
+    {name = "Elena Colangeli", email = "elena.colangeli@port.ac.uk"},
 ]
-description = "Population Inference with gravitational-wave dark-siren"
+description = "NumPyro for gravitational-wave cosmology."
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE.md"]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
 ]
-license = "MIT"
-license-files = ["LICEN[CS]E*"]
 keywords = [
     "hamiltonian monte-carlo",
     "cosmology",
     "gravitational waves"
 ]
 dependencies = [
-    "jax",
-    "numpyro",
-    "matplotlib",
-    "numpy",
-    "pandas",
-    "scipy",
-    "corner",
-    "pyyaml",
-    "arviz",
-    "optax",
-    "rich",
-    "healpy"
+    "arviz>=0.22.0",
+    "blackjax>=1.3",
+    "corner>=2.2.3",
+    "equinox>=0.13.6",
+    "h5py>=3.14.0",
+    "healpy>=1.18.1",
+    "ipython>=9.6.0",
+    "jax>=0.5.3",
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.5",
+    "numpyro>=0.19.0",
+    "optax>=0.2.6",
+    "pandas>=2.3.3",
+    "pyyaml>=6.0.3",
+    "rich>=13.0",
+]
+dynamic = [
+    "version",
 ]
 
 [project.urls]
-Homepage = "https://github.com/konstantinleyde/cosmopyro"
-Issues = "https://github.com/konstantinleyde/cosmopyro/issues"
+"Homepage" = "https://github.com/konstantinleyde/cosmopyro"
+# "Documentation" = ""
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.4.2",
+]
+cosmology = [
+    "astropy>=7.1.0",
+]
+# data.load_lvk_data imports astropy at module level and bilby inside
+# get_prior_o4a.
+lvk = [
+    "astropy>=7.1.0",
+    "bilby>=2.8.0",
+]
+# cosmology.modified_gw_distance_ratio.ratio_function_cM imports quadax.
+modified_gravity = [
+    "quadax",
+]
+docs = [
+    "sphinx",
+    "furo",
+    "sphinx-copybutton",
+    "sphinx-design",
+]
+
+[tool.setuptools.dynamic]
+# Single source of truth: src/cosmopyro/__init__.py
+version = {attr = "cosmopyro.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = [
+]
+testpaths = [
+    "tests"
+]
+
+[tool.ruff]
+indent-width = 4
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+extend-select = ["I"]

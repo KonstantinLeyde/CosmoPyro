@@ -1,0 +1,19 @@
+/* Highlight specific sidebar links */
+
+/* "Interactive Configuration Builder" (kwargs_builder page) */
+.sidebar-tree a.reference.internal[href*="kwargs_builder"] {
+  color: #7c3aed !important;
+  font-weight: 600;
+}
+
+/* "Quickstart" */
+.sidebar-tree a.reference.internal[href*="quickstart"] {
+  color: #7c3aed !important;
+  font-weight: 600;
+}
+
+/* "Feedback" */
+.sidebar-tree a.reference.internal[href*="feedback"] {
+  color: #2e86de !important;
+  font-weight: 600;
+}
