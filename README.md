@@ -9,7 +9,11 @@
 
 # **CosmoPyro**
 
+[![Documentation](https://readthedocs.org/projects/cosmopyro/badge/?version=latest)](https://cosmopyro.readthedocs.io/)
+
 CosmoPyro is a Bayesian framework for reconstructing the gravitational-wave population of compact binary coalescences using Hamiltonian Monte Carlo (HMC), and more specifically the No-U-Turn sampler implemented in [NumPyro](https://num.pyro.ai/en/stable/).
+
+📖 **Full documentation: [cosmopyro.readthedocs.io](https://cosmopyro.readthedocs.io/)** — [installation](https://cosmopyro.readthedocs.io/en/latest/installation.html), a [quickstart](https://cosmopyro.readthedocs.io/en/latest/quickstart.html), the mass and cosmology model reference, and an [interactive configuration builder](https://cosmopyro.readthedocs.io/en/latest/running/kwargs_builder.html).
 
 ## Installation Instructions
 
@@ -45,7 +49,9 @@ pip install --upgrade --force-reinstall "jax[cuda12]"
 
 ## Running
 
-For examples, see either this dedicated [git repository](https://github.com/KonstantinLeyde/CosmoPyro-Demo) or navigate to the [examples folder](examples), and follow the readme there. notebooks in the examples folder.
+See the [Quickstart](https://cosmopyro.readthedocs.io/en/latest/quickstart.html) for a first run, and [Launching an Analysis](https://cosmopyro.readthedocs.io/en/latest/running/launching_analysis.html) for the full set of command-line options.
+
+For worked examples, see the dedicated [CosmoPyro-Demo](https://github.com/KonstantinLeyde/CosmoPyro-Demo) repository, or the notebooks in the [examples folder](https://github.com/KonstantinLeyde/CosmoPyro/tree/main/examples) of this repository, which has its own README.
 
 ## Citation
 
