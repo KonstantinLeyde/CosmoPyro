@@ -15,13 +15,20 @@ source-frame mass distribution, and the merger rate evolution.
 
 .. toctree::
    :maxdepth: 2
+   :caption: About
+
+   citation
+   feedback
+
+.. toctree::
+   :maxdepth: 2
    :caption: Models
 
-   methodology/modified_gravity_models
    methodology/parametrized_mass_models
    methodology/gaussian_process_mass_models
    methodology/drawing_random_fields
    methodology/conditional_distributions
+   methodology/modified_gravity_models
 
 .. toctree::
    :maxdepth: 2
@@ -44,12 +51,5 @@ source-frame mass distribution, and the merger rate evolution.
    :maxdepth: 2
    :caption: Data
 
-   o4a_data
+   o5_data
    simulated_data
-
-.. toctree::
-   :maxdepth: 2
-   :caption: About
-
-   citation
-   feedback

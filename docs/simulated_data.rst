@@ -1,8 +1,8 @@
-Simulated O4-like Data
+Simulated O5-like Data
 ======================
 
 For testing and development, we provide simulated data that mimics an
-O4-like observing run.  These datasets have **no uncertainty on sky position**,
+O5-like observing run.  These datasets have **no uncertainty on sky position**,
 making them simpler to work with than real data.
 
 

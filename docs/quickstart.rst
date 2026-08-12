@@ -14,13 +14,27 @@ This page walks through each step briefly and points to the detailed pages.
 1. Prepare data
 ----------------
 
-You need two HDF5 files:
+You need two HDF5 files: **posterior samples** and **injections** (the latter
+1-D, with shape ``(n_injections,)``).
 
-- **Posterior samples** with shape ``(n_events, n_posterior_samples)``
-- **Injections** with shape ``(n_injections,)``
+Posterior samples are accepted in either of two layouts:
 
-For testing, use the :doc:`simulated O4-like data <simulated_data>` we provide,
-or generate your own following that page's instructions.
+*Rectangular* -- every key has shape ``(n_events, n_posterior_samples)``, i.e.
+the same number of samples for every event.  Simple, but it forces you to
+truncate every event down to the shortest one.
+
+*Flat* -- every key is a 1-D array with all events concatenated, alongside a
+``num_posterior_samples_per_event`` key holding the group sizes.  This permits a
+**variable number of posterior samples per event**, so nothing has to be thrown
+away.  See :ref:`flat-format`.
+
+Rectangular input is flattened internally on load, so both layouts converge on
+the same representation before sampling -- the flat layout simply lets you keep
+every sample you have.
+
+For testing, use the :doc:`simulated O5-like data <simulated_data>` we provide,
+or generate your own following that page's instructions.  The
+:doc:`GWTC-5 data products <o5_data>` ship in the flat layout.
 
 For real data, see :doc:`running/data_preparation` on how to convert
 pandas DataFrames into the required format.
@@ -41,8 +55,17 @@ For modified gravity there is no shipped configuration; see
 :doc:`methodology/modified_gravity_models` for the ``cosmology_model_name``
 values and the priors each one needs.
 
-You can also use the :doc:`interactive configuration builder <running/kwargs_builder>`
-to generate a YAML file with a web form.
+.. card:: ⚙️  Interactive Configuration Builder
+   :link: running/kwargs_builder
+   :link-type: doc
+   :class-card: sd-border-2 sd-shadow-sm
+   :class-title: sd-fs-5
+
+   **Don't write the YAML by hand.**  Pick a mass model, set priors and binning
+   in a web form, and download a ready-to-run configuration file.
+
+   +++
+   Open the builder →
 
 
 3. Run

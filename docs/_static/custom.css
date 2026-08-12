@@ -1,4 +1,73 @@
-/* Highlight specific sidebar links */
+/* ===========================================================================
+   Latin Modern Sans — the sans companion to the face LaTeX gives you with
+   T1 fontenc.  Used for all text on the site.
+
+   Self-hosted under _static/fonts/ so that `make html` works offline and the
+   published site makes no third-party requests.  Files come from
+   dreampulse/computer-modern-web-font, which repackages the GUST Latin Modern
+   fonts; these are released under the GUST Font License and are free to
+   redistribute.
+
+   All four faces are shipped: prose needs the obliques for emphasis, and
+   without them the browser synthesises a skewed fake.
+   =========================================================================== */
+
+@font-face {
+  font-family: "Latin Modern Sans";
+  src: url("fonts/cmunss.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Sans";
+  src: url("fonts/cmunsi.woff") format("woff");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Sans";
+  src: url("fonts/cmunsx.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Latin Modern Sans";
+  src: url("fonts/cmunso.woff") format("woff");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Furo derives every text style from these two variables, and defaults
+   --font-stack--headings to var(--font-stack).  Overriding the one variable
+   therefore covers headings, prose, sidebar, tables and admonitions alike,
+   while --font-stack--monospace is deliberately left alone so that code blocks
+   stay monospaced.  The emoji families are carried over from Furo's own stack.
+   Defined on `body` because that is where Furo declares them. */
+body {
+  --font-stack: "Latin Modern Sans", "CMU Sans Serif", -apple-system,
+                BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif,
+                "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Latin Modern's bold is lighter than a typical UI sans bold, so the top
+   heading levels need the extra weight to hold their hierarchy. */
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* ===========================================================================
+   Highlight specific sidebar links
+   =========================================================================== */
 
 /* "Interactive Configuration Builder" (kwargs_builder page) */
 .sidebar-tree a.reference.internal[href*="kwargs_builder"] {

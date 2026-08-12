@@ -192,10 +192,9 @@ function renderCosmoModelCards() {
   const entries = Object.entries(COSMO_MODELS);
   const cols = 3;
   const lastRowStart = entries.length - ((entries.length % cols) || cols);
-  grid.innerHTML = entries.map(([id, m], i) =>
+  grid.innerHTML = entries.map(([id], i) =>
     `<div class="kb-model-card ${id === selectedCosmoModel ? 'active' : ''} ${i >= lastRowStart ? 'kb-last-row' : ''}" onclick="selectCosmoModel('${id}')">
       <div class="kb-card-name">${id}</div>
-      <div class="kb-card-desc">${m.description || ''}</div>
     </div>`
   ).join("");
 }

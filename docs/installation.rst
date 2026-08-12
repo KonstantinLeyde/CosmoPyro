@@ -54,47 +54,6 @@ The ``-e`` (editable) install means changes to the source tree take effect
 without reinstalling.
 
 
-Optional dependencies
----------------------
-
-Several features import third-party packages lazily, so the base install stays
-light. Install the extra you need:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 22 20 58
-
-   * - Extra
-     - Adds
-     - Needed for
-   * - ``cosmology``
-     - ``astropy``
-     - Cosmology utilities that defer to astropy.
-   * - ``lvk``
-     - ``astropy``, ``bilby``
-     - Reading real LVK data. ``data.load_lvk_data`` imports astropy at module
-       level and bilby inside ``get_prior_o4a``.
-   * - ``modified_gravity``
-     - ``quadax``
-     - ``cosmology.modified_gw_distance_ratio.ratio_function_cM``.
-   * - ``test``
-     - ``pytest``
-     - Running the test suite.
-   * - ``docs``
-     - ``sphinx``, ``furo``, ``sphinx-copybutton``, ``sphinx-design``
-     - Building this documentation.
-
-.. code-block:: bash
-
-   uv pip install -e ".[lvk]"
-
-   # or several at once
-   uv pip install -e ".[cosmology,modified_gravity,test]"
-
-If you skip an extra and then use the feature that needs it, you will get an
-``ImportError`` naming the missing package.
-
-
 .. _gpu-support:
 
 GPU support
