@@ -2,7 +2,8 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/KonstantinLeyde/CosmoPyro/refs/heads/main/images/CosmoPyro_dark.png">
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/KonstantinLeyde/CosmoPyro/refs/heads/main/images/CosmoPyro_light.png">
-    <img alt="CosmoPyro logo" src="https://raw.githubusercontent.com/KonstantinLeyde/CosmoPyroV1/refs/heads/main/images/CosmoPyro_light.png" width="280">
+    <!-- PyPI strips <source> elements, so this fallback is what renders there. -->
+    <img alt="CosmoPyro logo" src="https://raw.githubusercontent.com/KonstantinLeyde/CosmoPyro/refs/heads/main/images/CosmoPyro_light.png" width="280">
   </picture>
 </div>
 
@@ -14,7 +15,7 @@ CosmoPyro is a Bayesian framework for reconstructing the gravitational-wave popu
 
 ### Installation from PyPI
 
-If you want to install CosmoPyro as quick as possible, you can use 
+If you want to install CosmoPyro as quickly as possible, you can use 
 
 ```bash
 uv venv --python 3.11
@@ -31,7 +32,7 @@ To create a new environment and install **CosmoPyro**, follow these steps. We wo
 python -m venv .venv
 source .venv/bin/activate
 git clone git@github.com:KonstantinLeyde/CosmoPyro.git
-cd cosmopyro
+cd CosmoPyro
 uv pip install -e .
 ```
 
@@ -60,6 +61,6 @@ If you use this software, please cite:
 
 ## Contact
 
-If you have any questions, feedback, or would like to discuss this project, please don't hesitate to reach out:
+If you have any questions, feedback, or would like to discuss new projects, please don't hesitate to reach out:
 
 Email: Konstantin.Leyde@gmail.com
