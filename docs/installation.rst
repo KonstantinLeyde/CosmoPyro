@@ -7,12 +7,30 @@ Requirements
 - **Python 3.11 or later**
 - A JAX build for your hardware (CPU by default, see :ref:`gpu-support`)
 
-Everything else is installed automatically. The core dependencies are
-`NumPyro <https://num.pyro.ai/en/stable/>`_ and
-`JAX <https://docs.jax.dev/en/latest/>`_ for the sampling, plus ``numpy``,
-``scipy``-adjacent tooling (``arviz``, ``blackjax``, ``optax``, ``equinox``),
-``h5py`` for I/O, ``healpy`` for sky maps, and ``matplotlib``/``corner`` for
-plotting.
+Everything else is installed automatically:
+
+.. list-table::
+   :widths: 32 68
+   :header-rows: 1
+
+   * - Purpose
+     - Packages
+   * - Sampling and autodiff
+     - `JAX <https://docs.jax.dev/en/latest/>`_,
+       `NumPyro <https://num.pyro.ai/en/stable/>`_, ``blackjax``, ``optax``,
+       ``equinox``, ``numpy``
+   * - Data and configuration I/O
+     - ``h5py``, ``pandas``, ``pyyaml``
+   * - Sky maps
+     - ``healpy``
+   * - Plotting and diagnostics
+     - ``matplotlib``, ``corner``, ``arviz``
+   * - Terminal and notebook output
+     - ``rich``, ``ipython``
+
+The minimum versions are declared in ``pyproject.toml`` and some are recent
+(``numpy>=2.3.5``, ``matplotlib>=3.10.7``), so install into a fresh
+environment rather than an existing one.
 
 .. tip::
 

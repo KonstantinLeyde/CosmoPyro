@@ -45,6 +45,11 @@
 .kb-model-card.active:hover { background: #1d4ed8; }
 .kb-model-card .kb-card-name { font-family: monospace; font-size: 1em; letter-spacing: -0.01em; }
 .kb-model-card .kb-card-desc { font-size: 0.8em; opacity: 0.75; margin-top: 0.15em; }
+/* Two-column variant, for the long mass_ratio distribution names */
+.kb-model-grid.kb-grid-2 { grid-template-columns: repeat(2, 1fr); }
+.kb-model-grid.kb-grid-2 .kb-model-card:nth-child(2n) { border-right: none; }
+.kb-model-grid.kb-grid-2 .kb-card-name { font-size: 0.85em; overflow-wrap: anywhere; }
+.kb-subhead { font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-foreground-secondary, #888); margin: 0.9em 0 0.2em; }
 .kb-model-card.active .kb-card-desc { opacity: 0.9; }
 .kb-toggle-btns { float: right; }
 .kb-btn-mini { font-size: 0.75em; padding: 2px 8px; margin-left: 4px; cursor: pointer; border: 1px solid var(--color-background-border, #ccc); border-radius: 4px; background: var(--color-background-primary, #fff); color: var(--color-foreground-secondary, #666); }
@@ -78,6 +83,10 @@
 <div class="kb-section">
   <h3>Mass Model & Priors <span class="kb-toggle-btns"><button class="kb-btn-mini" onclick="resetMassPriorsToDefault()">Default</button><button class="kb-btn-mini" onclick="toggleAllMassPriors('Delta')">All Delta</button><button class="kb-btn-mini" onclick="toggleAllMassPriors('Uniform')">All Uniform</button></span></h3>
   <div class="kb-model-grid" id="kb-model-grid" style="margin-bottom: 0.6em;"></div>
+  <div id="kb-mass-ratio-block" style="margin-bottom: 0.6em;">
+    <div class="kb-subhead"><code>mass_ratio</code> distribution</div>
+    <div class="kb-model-grid kb-grid-2" id="kb-mass-ratio-model-grid"></div>
+  </div>
   <div id="kb-mass-priors"></div>
 </div>
 
@@ -170,8 +179,46 @@
 // MODEL_REGISTRY and COSMO_MODEL_REGISTRY are defined by the script tag above
 let MODELS = (typeof MODEL_REGISTRY !== "undefined") ? MODEL_REGISTRY : {};
 let COSMO_MODELS = (typeof COSMO_MODEL_REGISTRY !== "undefined") ? COSMO_MODEL_REGISTRY : {};
+let MASS_RATIO_MODELS = (typeof MASS_RATIO_MODEL_REGISTRY !== "undefined") ? MASS_RATIO_MODEL_REGISTRY : {};
 let selectedModel = "power_law_peak2";
 let selectedCosmoModel = "FlatLambdaCDM";
+let selectedMassRatioModel = "mass_ratio_running_power_law_in_log";
+
+// Factorized mass models declare a "mass_ratio" prior group; the joint 2-D GP
+// models describe p(m_1s, q) in one go and have no mass-ratio choice to make.
+function modelHasMassRatio(m) {
+  return !!(m && m.mass_priors && m.mass_priors.mass_ratio);
+}
+
+// Priors for the currently selected mass-ratio distribution.  A mass model's
+// own block wins for the distribution it names in dist_names, since it can
+// deliberately differ from the generic set (power_law_peak2 omits
+// sigma_mass_cutoff_mass_2 so the code falls back to delta_m).
+function massRatioPriors() {
+  const m = MODELS[selectedModel];
+  if (!modelHasMassRatio(m)) return {};
+  if (m.dist_names && m.dist_names.mass_ratio === selectedMassRatioModel) {
+    return m.mass_priors.mass_ratio;
+  }
+  const mr = MASS_RATIO_MODELS[selectedMassRatioModel];
+  return mr ? mr.priors : {};
+}
+
+// mass_priors with the mass_ratio group swapped for the selected distribution.
+function effectiveMassPriors() {
+  const m = MODELS[selectedModel];
+  const groups = {};
+  for (const [group, params] of Object.entries(m.mass_priors)) {
+    groups[group] = (group === "mass_ratio") ? massRatioPriors() : params;
+  }
+  return groups;
+}
+
+function effectiveDistNames() {
+  const m = MODELS[selectedModel];
+  if (!modelHasMassRatio(m)) return m.dist_names;
+  return Object.assign({}, m.dist_names, { mass_ratio: selectedMassRatioModel });
+}
 
 function renderModelCards() {
   const grid = document.getElementById("kb-model-grid");
@@ -199,9 +246,36 @@ function renderCosmoModelCards() {
   ).join("");
 }
 
+function renderMassRatioModelCards() {
+  const block = document.getElementById("kb-mass-ratio-block");
+  const grid = document.getElementById("kb-mass-ratio-model-grid");
+  if (!block || !grid) return;
+  if (!modelHasMassRatio(MODELS[selectedModel])) {
+    block.style.display = "none";
+    grid.innerHTML = "";
+    return;
+  }
+  block.style.display = "";
+  const entries = Object.entries(MASS_RATIO_MODELS);
+  const cols = 2;
+  const lastRowStart = entries.length - ((entries.length % cols) || cols);
+  grid.innerHTML = entries.map(([id], i) =>
+    `<div class="kb-model-card ${id === selectedMassRatioModel ? 'active' : ''} ${i >= lastRowStart ? 'kb-last-row' : ''}" onclick="selectMassRatioModel('${id}')">
+      <div class="kb-card-name">${id}</div>
+    </div>`
+  ).join("");
+}
+
+function selectMassRatioModel(id) {
+  selectedMassRatioModel = id;
+  renderMassRatioModelCards();
+  kbUpdateUI();
+}
+
 function selectModel(id) {
   selectedModel = id;
   renderModelCards();
+  renderMassRatioModelCards();
   kbUpdateUI();
 }
 
@@ -512,8 +586,7 @@ function toggleAllPriors(prefix, targetType) {
 }
 
 function toggleAllMassPriors(targetType) {
-  const m = MODELS[selectedModel];
-  for (const group of Object.keys(m.mass_priors)) {
+  for (const group of Object.keys(effectiveMassPriors())) {
     document.querySelectorAll(`select[id^="${group}_"][id$="_type"]`).forEach(sel => {
       setDropdownValue(sel.id, targetType);
       const base = sel.id.replace("_type", "");
@@ -542,8 +615,7 @@ function resetPriorsToDefault(prefix, defaults) {
 }
 
 function resetMassPriorsToDefault() {
-  const m = MODELS[selectedModel];
-  for (const [group, params] of Object.entries(m.mass_priors)) {
+  for (const [group, params] of Object.entries(effectiveMassPriors())) {
     for (const [k, v] of Object.entries(params)) resetPriorToDefault(group, k, v);
   }
 }
@@ -655,7 +727,7 @@ function kbUpdateUI() {
 
   // Mass priors: always re-render (model-specific)
   let html = "";
-  for (const [group, params] of Object.entries(m.mass_priors)) {
+  for (const [group, params] of Object.entries(effectiveMassPriors())) {
     html += `<h4 style="margin:0.8em 0 0.3em;color:var(--color-foreground-secondary,#555);">${group}</h4>`;
     for (const [k, v] of Object.entries(params)) html += makePriorRow(k, v, group);
   }
@@ -757,7 +829,7 @@ function kbGenerate() {
   let priors = { cosmology: {}, rate: {}, redshift: {} };
   for (const k of Object.keys(COSMO_PRIORS)) priors.cosmology[k] = readPrior("cosmo", k, COSMO_PRIORS[k]);
   for (const k of Object.keys(REDSHIFT_PRIORS)) priors.redshift[k] = readPrior("rz", k, REDSHIFT_PRIORS[k]);
-  for (const [group, params] of Object.entries(m.mass_priors)) {
+  for (const [group, params] of Object.entries(effectiveMassPriors())) {
     priors[group] = {};
     for (const [k, v] of Object.entries(params)) {
       const realName = k.replace(" [shape]", "");
@@ -825,7 +897,7 @@ function kbGenerate() {
       z_steps: parseInt(document.getElementById("kb-zsteps").value),
     },
     kwargs_data: {},
-    distribution_names: m.dist_names,
+    distribution_names: effectiveDistNames(),
     kwargs_priors: priors,
     kwargs_sampler: sampler,
     likelihood_evaluation: {
@@ -905,13 +977,21 @@ function kbUpload(event) {
 }
 
 function applyUploadedConfig(cfg) {
-  // 1. Detect and select mass model from distribution_names
+  // 1. Detect and select mass model from distribution_names.  Joint models are
+  // named under source_frame_masses, factorized ones under mass_1_s.
   const dn = cfg.distribution_names || {};
-  const sfm = dn.source_frame_masses || "";
-  if (sfm && sfm in MODELS) {
-    selectedModel = sfm;
+  const massModel = dn.source_frame_masses || dn.mass_1_s || "";
+  if (dn.mass_ratio && dn.mass_ratio in MASS_RATIO_MODELS) {
+    selectedMassRatioModel = dn.mass_ratio;
+  }
+  if (massModel && massModel in MODELS) {
+    selectedModel = massModel;
     _initialized = false;
     renderModelCards();
+    renderMassRatioModelCards();
+    kbUpdateUI();
+  } else if (dn.mass_ratio) {
+    renderMassRatioModelCards();
     kbUpdateUI();
   }
 
@@ -955,8 +1035,7 @@ function applyUploadedConfig(cfg) {
 
   // 4. Mass priors
   const kp = cfg.kwargs_priors || {};
-  const m = MODELS[selectedModel];
-  for (const [group, params] of Object.entries(m.mass_priors)) {
+  for (const [group, params] of Object.entries(effectiveMassPriors())) {
     const gp = kp[group] || {};
     for (const [k, def] of Object.entries(params)) {
       const safeK = k.replace(/[^a-zA-Z0-9]/g, "_");
@@ -1090,8 +1169,10 @@ function setVal(id, val) {
 // Initialize
 if (!(selectedModel in MODELS) && Object.keys(MODELS).length > 0) selectedModel = Object.keys(MODELS)[0];
 if (!(selectedCosmoModel in COSMO_MODELS) && Object.keys(COSMO_MODELS).length > 0) selectedCosmoModel = Object.keys(COSMO_MODELS)[0];
+if (!(selectedMassRatioModel in MASS_RATIO_MODELS) && Object.keys(MASS_RATIO_MODELS).length > 0) selectedMassRatioModel = Object.keys(MASS_RATIO_MODELS)[0];
 renderModelCards();
 renderCosmoModelCards();
+renderMassRatioModelCards();
 kbUpdateUI();
 renderCosmoModelPriors();
 syncNoiseShape();
