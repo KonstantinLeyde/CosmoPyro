@@ -28,6 +28,7 @@ source-frame mass distribution, and the merger rate evolution.
    methodology/parametrized_mass_models
    methodology/gaussian_process_mass_models
    methodology/modified_gravity_models
+   methodology/conditional_distributions
 
 .. toctree::
    :maxdepth: 1

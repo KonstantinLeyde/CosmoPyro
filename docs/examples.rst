@@ -8,6 +8,7 @@ plotting the output of a finished run.
    :maxdepth: 1
 
    tutorials/computing_gradients
+   tutorials/drawing_random_fields
    tutorials/loading_results
 
 Shorter, self-contained snippets are embedded in the reference pages:

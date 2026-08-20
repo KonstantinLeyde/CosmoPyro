@@ -181,13 +181,6 @@ smoothing :math:`S(m_2)`, with :math:`m_2 = q \cdot m_{1,s}`.
    :doc:`../running/launching_analysis` page.
 
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Related
-
-   conditional_distributions
-
-
 API reference
 -------------
 

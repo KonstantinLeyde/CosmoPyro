@@ -168,12 +168,9 @@ the Fourier modes with the chosen power spectrum, which controls smoothness.
    :ref:`example-configurations` on the
    :doc:`../running/launching_analysis` page.
 
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Related
-
-   drawing_random_fields
+   To experiment with the underlying ``RealField`` class on its own -- drawing
+   fields from an arbitrary power spectrum, without any of the mass-model
+   machinery -- see :doc:`../tutorials/drawing_random_fields`.
 
 
 API reference
