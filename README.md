@@ -57,11 +57,17 @@ For worked examples, see the dedicated [CosmoPyro-Demo](https://github.com/Konst
 
 If you use this software, please cite:
 
-[TO WRITE](https://arxiv.org/pdf/??)
+K. Leyde and E. Colangeli, *CosmoPyro: Gradients for Gravitational-Wave Cosmology*, [arXiv:2608.18281](https://arxiv.org/abs/2608.18281) (2026).
 
 ```bibtex
-@article{
-    TOCOLLATE
+@article{Leyde:2026bat,
+    author = "Leyde, Konstantin and Colangeli, Elena",
+    title = "{CosmoPyro: Gradients for Gravitational-Wave Cosmology}",
+    eprint = "2608.18281",
+    archivePrefix = "arXiv",
+    primaryClass = "astro-ph.CO",
+    month = "8",
+    year = "2026"
 }
 ```
 
