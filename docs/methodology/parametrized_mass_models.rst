@@ -137,8 +137,10 @@ and :math:`m_2 = q \cdot m_{1,s}`.
      - Low-mass smoothing scale for :math:`m_2`
 
 Setting ``mass_ratio: mass_ratio_truncated_gaussian`` instead selects a
-Gaussian in :math:`q`, truncated to :math:`0 < q < 1` and carrying the same
-low-mass smoothing in :math:`m_2`:
+Gaussian in :math:`q`, carrying the same low-mass smoothing in :math:`m_2`.
+The truncation is not fixed: the density is normalised over the ``mass_ratio``
+grid declared in ``bins``, so its support is whatever range you configure
+there (:math:`0.03 \le q \le 1` in the shipped configurations).
 
 .. math::
 
@@ -160,35 +162,18 @@ low-mass smoothing in :math:`m_2`:
      - Low-mass smoothing scale for :math:`m_2`, as above
 
 
-Example YAML configuration
----------------------------
+.. seealso::
 
-.. code-block:: yaml
+   Complete, runnable configurations for these models are collected under
+   :ref:`example-configurations` on the
+   :doc:`../running/launching_analysis` page.
 
-   distribution_names:
-     mass_1_s: power_law_peak2
-     mass_ratio: mass_ratio_running_power_law_in_log
 
-   kwargs_priors:
-     mass_1_s:
-       alpha:       {dist_type: Uniform, min: 1.5, max: 6.0}
-       mmin:        {dist_type: Uniform, min: 2.0, max: 10.0}
-       mmax:        {dist_type: Uniform, min: 50.0, max: 200.0}
-       lambda_g:    {dist_type: Uniform, min: 0.0, max: 1.0}
-       lambda_g_low:{dist_type: Uniform, min: 0.0, max: 1.0}
-       delta_m:     {dist_type: Uniform, min: 0.001, max: 10.0}
-       mu_g_low:    {dist_type: Uniform, min: 5.0, max: 15.0}
-       sigma_g_low: {dist_type: Uniform, min: 0.4, max: 5.0}
-       mu_g_high:   {dist_type: Uniform, min: 15.0, max: 100.0}
-       sigma_g_high:{dist_type: Uniform, min: 0.4, max: 10.0}
-     mass_ratio:
-       beta_0: {dist_type: Uniform, min: -2.0, max: 4.0}
-       beta_1: {dist_type: Delta, value: 0.0}
-       mass_ratio_running_zero_point: {dist_type: Delta, value: 10.0}
+.. toctree::
+   :maxdepth: 1
+   :caption: Related
 
-   bins:
-     mass_1_s:   {min: 1.0, max: 150.0, num: 400}
-     mass_ratio: {min: 0.03, max: 1.0, num: 200}
+   conditional_distributions
 
 
 API reference

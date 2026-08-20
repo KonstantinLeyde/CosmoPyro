@@ -171,8 +171,9 @@ A minimal YAML configuration file looks like:
    #   sampler: nuts
    #   debug: false
 
-See the ``examples/configs/`` directory for complete configuration files
-(parametrized multi-peak, GP 1-D, and GP 2-D).
+The model-specific blocks for each mass model are collected under
+:ref:`example-configurations` below, and ready-to-run files live in the
+``examples/configs/`` directory.
 
 You can also use the :doc:`interactive configuration builder <kwargs_builder>`
 to generate a YAML file.  For details on all available models, see the
@@ -251,3 +252,159 @@ Available prior types
      - Gaussian: ``loc``, ``scale`` (optionally ``shape`` for vector params)
    * - ``Dirichlet``
      - Dirichlet: ``concentration``
+
+
+.. _example-configurations:
+
+Example configurations
+-----------------------
+
+The model-specific blocks for every mass model shipped with CosmoPyro,
+collected here rather than spread across the model pages.  Each tab is a
+fragment: combine it with the ``cosmology_model_name``, ``kwargs_sampler``,
+``likelihood_evaluation`` and ``results_path`` blocks from the overview above
+to get a complete configuration file.
+
+.. tab-set::
+
+   .. tab-item:: power_law_peak2
+
+      Parametrized multi-peak primary mass with a running power law in
+      :math:`q` -- see :doc:`../methodology/parametrized_mass_models`.
+
+      .. code-block:: yaml
+
+         distribution_names:
+           mass_1_s: power_law_peak2
+           mass_ratio: mass_ratio_running_power_law_in_log
+           # or: mass_ratio_truncated_gaussian, which replaces beta_0/beta_1/
+           # mass_ratio_running_zero_point below with mu_mass_ratio and
+           # sigma_mass_ratio
+
+         kwargs_priors:
+           mass_1_s:
+             alpha:       {dist_type: Uniform, min: 1.5, max: 6.0}
+             mmin:        {dist_type: Uniform, min: 2.0, max: 10.0}
+             mmax:        {dist_type: Uniform, min: 50.0, max: 200.0}
+             lambda_g:    {dist_type: Uniform, min: 0.0, max: 1.0}
+             lambda_g_low:{dist_type: Uniform, min: 0.0, max: 1.0}
+             delta_m:     {dist_type: Uniform, min: 0.001, max: 10.0}
+             mu_g_low:    {dist_type: Uniform, min: 5.0, max: 15.0}
+             sigma_g_low: {dist_type: Uniform, min: 0.4, max: 5.0}
+             mu_g_high:   {dist_type: Uniform, min: 15.0, max: 100.0}
+             sigma_g_high:{dist_type: Uniform, min: 0.4, max: 10.0}
+           mass_ratio:
+             beta_0: {dist_type: Uniform, min: -2.0, max: 4.0}
+             beta_1: {dist_type: Delta, value: 0.0}
+             mass_ratio_running_zero_point: {dist_type: Delta, value: 10.0}
+
+         bins:
+           mass_1_s:   {min: 1.0, max: 150.0, num: 400}
+           mass_ratio: {min: 0.03, max: 1.0, num: 200}
+
+   .. tab-item:: fourier_gp_1D
+
+      1-D Gaussian process on :math:`m_{1,s}`, combined with a parametrized
+      :math:`p(q \mid m_{1,s})` -- see
+      :doc:`../methodology/gaussian_process_mass_models`.
+
+      .. code-block:: yaml
+
+         distribution_names:
+           mass_1_s: fourier_gp_1D
+           mass_ratio: mass_ratio_running_power_law_in_log
+           redshift: MadauDickinson
+
+         kwargs_priors:
+           mass_1_s:
+             gaussian_F_whitened_spatial:
+               dist_type: Normal
+               loc: 0.0
+               scale: 1
+               shape: [200]
+             mass_min: {dist_type: Uniform, min: 2, max: 10}
+             mass_max: {dist_type: Uniform, min: 50, max: 150}
+             sigma_low_fractional: {dist_type: Uniform, min: 0.01, max: 0.1}
+             sigma_high_fractional: {dist_type: Uniform, min: 0.01, max: 0.1}
+             power_spectrum_amplitude: {dist_type: Delta, value: 5.0}
+             power_spectrum_cutoff: {dist_type: Delta, value: 5.0}
+
+         bins:
+           mass_1_s: {min: 2.0, max: 120.0, num: 200}
+           mass_ratio: {min: 0.03, max: 1.0, num: 200}
+           redshift: {min: 0.0, max: 5.0, num: 1000}
+
+   .. tab-item:: fourier_gp_2D_logMdelta
+
+      Joint 2-D Gaussian process in :math:`(\log M, \delta)`, with exchange
+      symmetry enforced exactly -- see
+      :doc:`../methodology/gaussian_process_mass_models`.
+
+      .. code-block:: yaml
+
+         distribution_names:
+           source_frame_masses: fourier_gp_2D_logMdelta
+           redshift: MadauDickinson
+
+         kwargs_priors:
+           source_frame_masses:
+             gaussian_F_whitened_spatial:
+               dist_type: Normal
+               loc: 0.0
+               scale: 1
+               shape: [120, 120]
+             mass_min: {dist_type: Uniform, min: 2, max: 10}
+             mass_max: {dist_type: Uniform, min: 30, max: 120}
+             sigma_low_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
+             sigma_high_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
+             power_spectrum_amplitude: {dist_type: Delta, value: 0.045}
+             power_spectrum_cutoff: {dist_type: Delta, value: 50.0}
+             power_spectrum_relative_scale_log_mass_total_s_to_minus_log_mass_ratio:
+               dist_type: Delta
+               value: 1.0
+             power_law_reference_mass_1_s: {dist_type: Delta, value: -2.0}
+             power_law_reference_mass_ratio: {dist_type: Delta, value: 1.5}
+
+         bins:
+           log_mass_total_s:    {min: 1.5, max: 6.0, num: 120}
+           minus_log_mass_ratio: {min: 0.0, max: 4.0, num: 120}
+           redshift:            {min: 0.0, max: 5.0, num: 1000}
+
+   .. tab-item:: fourier_gp_2D_m1sq
+
+      Joint 2-D Gaussian process directly on :math:`(m_{1,s}, q)`, which needs
+      no extra Jacobian -- see
+      :doc:`../methodology/gaussian_process_mass_models`.
+
+      .. code-block:: yaml
+
+         distribution_names:
+           source_frame_masses: fourier_gp_2D_m1sq
+           redshift: MadauDickinson
+
+         kwargs_priors:
+           source_frame_masses:
+             gaussian_F_whitened_spatial:
+               dist_type: Normal
+               loc: 0.0
+               scale: 1
+               shape: [120, 120]
+             mass_min: {dist_type: Uniform, min: 2, max: 10}
+             mass_max: {dist_type: Uniform, min: 30, max: 120}
+             sigma_low_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
+             sigma_high_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
+             power_spectrum_amplitude: {dist_type: Delta, value: 0.045}
+             power_spectrum_cutoff: {dist_type: Delta, value: 50.0}
+             power_spectrum_relative_scale_mass_1_s_to_mass_ratio:
+               dist_type: Delta
+               value: 1.0
+
+         bins:
+           mass_1_s:   {min: 2.0, max: 120.0, num: 120}
+           mass_ratio: {min: 0.02, max: 1.0, num: 120}
+           redshift:   {min: 0.0, max: 5.0, num: 1000}
+
+Ready-to-run files for these models live in the ``examples/configs/``
+directory of the repository, and the
+:doc:`interactive configuration builder <kwargs_builder>` will generate one
+for any combination of models.

@@ -59,34 +59,6 @@ the Fourier modes with the chosen power spectrum, which controls smoothness.
          * - ``mass_min``, ``mass_max``
            - Physical mass bounds for the window function
 
-      **Example YAML:**
-
-      .. code-block:: yaml
-
-         distribution_names:
-           mass_1_s: fourier_gp_1D
-           mass_ratio: mass_ratio_running_power_law_in_log
-           redshift: MadauDickinson
-
-         kwargs_priors:
-           mass_1_s:
-             gaussian_F_whitened_spatial:
-               dist_type: Normal
-               loc: 0.0
-               scale: 1
-               shape: [200]
-             mass_min: {dist_type: Uniform, min: 2, max: 10}
-             mass_max: {dist_type: Uniform, min: 50, max: 150}
-             sigma_low_fractional: {dist_type: Uniform, min: 0.01, max: 0.1}
-             sigma_high_fractional: {dist_type: Uniform, min: 0.01, max: 0.1}
-             power_spectrum_amplitude: {dist_type: Delta, value: 5.0}
-             power_spectrum_cutoff: {dist_type: Delta, value: 5.0}
-
-         bins:
-           mass_1_s: {min: 2.0, max: 120.0, num: 200}
-           mass_ratio: {min: 0.03, max: 1.0, num: 200}
-           redshift: {min: 0.0, max: 5.0, num: 1000}
-
       **Prior draws:**
 
       .. literalinclude:: ../examples/gp_1d_prior_draws.py
@@ -163,38 +135,6 @@ the Fourier modes with the chosen power spectrum, which controls smoothness.
            - Exponent of the :math:`q^{\beta}` base-measure factor
               (set to 0 for a flat base measure)
 
-      **Example YAML:**
-
-      .. code-block:: yaml
-
-         distribution_names:
-           source_frame_masses: fourier_gp_2D_logMdelta
-           redshift: MadauDickinson
-
-         kwargs_priors:
-           source_frame_masses:
-             gaussian_F_whitened_spatial:
-               dist_type: Normal
-               loc: 0.0
-               scale: 1
-               shape: [120, 120]
-             mass_min: {dist_type: Uniform, min: 2, max: 10}
-             mass_max: {dist_type: Uniform, min: 30, max: 120}
-             sigma_low_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
-             sigma_high_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
-             power_spectrum_amplitude: {dist_type: Delta, value: 0.045}
-             power_spectrum_cutoff: {dist_type: Delta, value: 50.0}
-             power_spectrum_relative_scale_log_mass_total_s_to_minus_log_mass_ratio:
-               dist_type: Delta
-               value: 1.0
-             power_law_reference_mass_1_s: {dist_type: Delta, value: -2.0}
-             power_law_reference_mass_ratio: {dist_type: Delta, value: 1.5}
-
-         bins:
-           log_mass_total_s:    {min: 1.5, max: 6.0, num: 120}
-           minus_log_mass_ratio: {min: 0.0, max: 4.0, num: 120}
-           redshift:            {min: 0.0, max: 5.0, num: 1000}
-
       **Prior draws:**
 
       .. literalinclude:: ../examples/gp_2d_prior_draws.py
@@ -216,40 +156,24 @@ the Fourier modes with the chosen power spectrum, which controls smoothness.
       ``power_spectrum_relative_scale_mass_1_s_to_mass_ratio`` instead of
       ``power_spectrum_relative_scale_log_mass_total_s_to_minus_log_mass_ratio``.
 
-      **Example YAML:**
-
-      .. code-block:: yaml
-
-         distribution_names:
-           source_frame_masses: fourier_gp_2D_m1sq
-           redshift: MadauDickinson
-
-         kwargs_priors:
-           source_frame_masses:
-             gaussian_F_whitened_spatial:
-               dist_type: Normal
-               loc: 0.0
-               scale: 1
-               shape: [120, 120]
-             mass_min: {dist_type: Uniform, min: 2, max: 10}
-             mass_max: {dist_type: Uniform, min: 30, max: 120}
-             sigma_low_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
-             sigma_high_fractional: {dist_type: Uniform, min: 0.01, max: 0.2}
-             power_spectrum_amplitude: {dist_type: Delta, value: 0.045}
-             power_spectrum_cutoff: {dist_type: Delta, value: 50.0}
-             power_spectrum_relative_scale_mass_1_s_to_mass_ratio:
-               dist_type: Delta
-               value: 1.0
-
-         bins:
-           mass_1_s:   {min: 2.0, max: 120.0, num: 120}
-           mass_ratio: {min: 0.02, max: 1.0, num: 120}
-           redshift:   {min: 0.0, max: 5.0, num: 1000}
-
       **Prior draws:**
 
       .. literalinclude:: ../examples/gp_2d_m1sq_prior_draws.py
          :language: python
+
+
+.. seealso::
+
+   Complete, runnable configurations for these models are collected under
+   :ref:`example-configurations` on the
+   :doc:`../running/launching_analysis` page.
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Related
+
+   drawing_random_fields
 
 
 API reference
