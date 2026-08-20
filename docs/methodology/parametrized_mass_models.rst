@@ -105,61 +105,73 @@ Primary mass :math:`p(m_{1,s})`
 Mass ratio :math:`p(q \mid m_{1,s})`
 --------------------------------------
 
-The conditional mass-ratio distribution is a power law whose exponent varies
-with the primary mass:
+Two conditional mass-ratio distributions are available, chosen with the
+``mass_ratio`` key of ``distribution_names``.  Both carry the same low-mass
+smoothing :math:`S(m_2)`, with :math:`m_2 = q \cdot m_{1,s}`.
 
-.. math::
+.. tab-set::
 
-   p(q \mid m_{1,s}) \propto q^{\,\beta(m_{1,s})}
-     \; S(m_2 \mid m_\mathrm{min}, \sigma_{m_2})
+   .. tab-item:: mass_ratio_running_power_law_in_log
 
-where
+      A power law whose exponent varies with the primary mass:
 
-.. math::
+      .. math::
 
-   \beta(m_{1,s}) = \beta_0 + \beta_1 \bigl[\log(m_{1,s}) - \log(m_\mathrm{ref})\bigr]
+         p(q \mid m_{1,s}) \propto q^{\,\beta(m_{1,s})}
+           \; S(m_2 \mid m_\mathrm{min}, \sigma_{m_2})
 
-and :math:`m_2 = q \cdot m_{1,s}`.
+      where
 
-.. list-table::
-   :widths: 35 65
-   :header-rows: 1
+      .. math::
 
-   * - Name
-     - Description
-   * - ``beta_0``
-     - Power-law exponent at reference mass
-   * - ``beta_1``
-     - Running slope (dependence on :math:`\log m_{1,s}`)
-   * - ``mass_ratio_running_zero_point``
-     - Reference mass :math:`m_\mathrm{ref}`
-   * - ``sigma_mass_cutoff_mass_2``
-     - Low-mass smoothing scale for :math:`m_2`
+         \beta(m_{1,s}) = \beta_0
+           + \beta_1 \bigl[\log(m_{1,s}) - \log(m_\mathrm{ref})\bigr]
 
-Setting ``mass_ratio: mass_ratio_truncated_gaussian`` instead selects a
-Gaussian in :math:`q`, carrying the same low-mass smoothing in :math:`m_2`.
-The truncation is not fixed: the density is normalised over the ``mass_ratio``
-grid declared in ``bins``, so its support is whatever range you configure
-there (:math:`0.03 \le q \le 1` in the shipped configurations).
+      Set ``beta_1`` to a ``Delta`` of 0 for a non-running power law.
 
-.. math::
+      .. list-table::
+         :widths: 35 65
+         :header-rows: 1
 
-   p(q \mid m_{1,s}) \propto
-     \mathcal{N}(q \mid \mu_q, \sigma_q)
-     \; S(m_2 \mid m_\mathrm{min}, \sigma_{m_2})
+         * - Name
+           - Description
+         * - ``beta_0``
+           - Power-law exponent at reference mass
+         * - ``beta_1``
+           - Running slope (dependence on :math:`\log m_{1,s}`)
+         * - ``mass_ratio_running_zero_point``
+           - Reference mass :math:`m_\mathrm{ref}`
+         * - ``sigma_mass_cutoff_mass_2``
+           - Low-mass smoothing scale for :math:`m_2`.  If omitted, the code
+             falls back to ``delta_m`` from ``mass_1_s``.
 
-.. list-table::
-   :widths: 35 65
-   :header-rows: 1
+   .. tab-item:: mass_ratio_truncated_gaussian
 
-   * - Name
-     - Description
-   * - ``mu_mass_ratio``
-     - Mean :math:`\mu_q` of the Gaussian in :math:`q`
-   * - ``sigma_mass_ratio``
-     - Width :math:`\sigma_q` of the Gaussian in :math:`q`
-   * - ``sigma_mass_cutoff_mass_2``
-     - Low-mass smoothing scale for :math:`m_2`, as above
+      A Gaussian in :math:`q`:
+
+      .. math::
+
+         p(q \mid m_{1,s}) \propto
+           \mathcal{N}(q \mid \mu_q, \sigma_q)
+           \; S(m_2 \mid m_\mathrm{min}, \sigma_{m_2})
+
+      The truncation is not fixed at :math:`0 < q < 1`: the density is
+      normalised over the ``mass_ratio`` grid declared in ``bins``, so its
+      support is whatever range you configure there
+      (:math:`0.03 \le q \le 1` in the shipped configurations).
+
+      .. list-table::
+         :widths: 35 65
+         :header-rows: 1
+
+         * - Name
+           - Description
+         * - ``mu_mass_ratio``
+           - Mean :math:`\mu_q` of the Gaussian in :math:`q`
+         * - ``sigma_mass_ratio``
+           - Width :math:`\sigma_q` of the Gaussian in :math:`q`
+         * - ``sigma_mass_cutoff_mass_2``
+           - Low-mass smoothing scale for :math:`m_2`, as above
 
 
 .. seealso::
