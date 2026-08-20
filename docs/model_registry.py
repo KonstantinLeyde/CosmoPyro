@@ -6,6 +6,7 @@ Used by:
   - Can be imported in code for validation or auto-discovery
 
 To add a new mass model, add an entry to MASS_MODELS below.
+To add a new mass-ratio model, add an entry to MASS_RATIO_MODELS below.
 To add a new cosmology model, add an entry to COSMO_MODELS below.
 """
 
@@ -370,6 +371,52 @@ MASS_MODELS = {
             "mass_1_s": {"min": 2.0, "max": 120.0, "num": 120},
             "mass_ratio": {"min": 0.02, "max": 1.0, "num": 120},
             "redshift": {"min": 0.0, "max": 5.0, "num": 1000},
+        },
+    },
+}
+
+# Conditional mass-ratio distributions p(q | m_1s), selectable independently of
+# the primary-mass model.  Only the factorized mass models above use these; the
+# joint 2-D GP models describe p(m_1s, q) in one go.
+#
+# A mass model's own "mass_ratio" block stays authoritative for whichever
+# distribution it names in dist_names, because it may deliberately differ from
+# the generic set here -- power_law_peak2, for instance, omits
+# sigma_mass_cutoff_mass_2 so that get_mass_delta_m2 falls back to delta_m.
+MASS_RATIO_MODELS = {
+    "mass_ratio_running_power_law_in_log": {
+        "priors": {
+            "beta_0": {"type": "Uniform", "min": -2.0, "max": 4.0, "value": 1.1},
+            "beta_1": {"type": "Delta", "min": -0.03, "max": 0.03, "value": 0.0},
+            "mass_ratio_running_zero_point": {
+                "type": "Delta",
+                "min": 5.0,
+                "max": 50.0,
+                "value": 10.0,
+            },
+            "sigma_mass_cutoff_mass_2": {
+                "type": "Uniform",
+                "min": 0.1,
+                "max": 10.0,
+                "value": 1.0,
+            },
+        },
+    },
+    "mass_ratio_truncated_gaussian": {
+        "priors": {
+            "mu_mass_ratio": {"type": "Uniform", "min": 0.0, "max": 1.0, "value": 0.8},
+            "sigma_mass_ratio": {
+                "type": "Uniform",
+                "min": 0.01,
+                "max": 1.0,
+                "value": 0.2,
+            },
+            "sigma_mass_cutoff_mass_2": {
+                "type": "Uniform",
+                "min": 0.1,
+                "max": 10.0,
+                "value": 1.0,
+            },
         },
     },
 }

@@ -48,7 +48,7 @@ napoleon_numpy_docstring = True
 import json
 
 sys.path.insert(0, os.path.dirname(__file__))
-from model_registry import COSMO_MODELS, MASS_MODELS
+from model_registry import COSMO_MODELS, MASS_MODELS, MASS_RATIO_MODELS
 
 # Write model registry as a JS file that works with file:// (no fetch needed)
 _js_path = os.path.join(os.path.dirname(__file__), "_static", "model_registry.js")
@@ -60,4 +60,7 @@ with open(_js_path, "w") as f:
     f.write(";\n")
     f.write("var COSMO_MODEL_REGISTRY = ")
     json.dump(COSMO_MODELS, f, indent=2)
+    f.write(";\n")
+    f.write("var MASS_RATIO_MODEL_REGISTRY = ")
+    json.dump(MASS_RATIO_MODELS, f, indent=2)
     f.write(";\n")
