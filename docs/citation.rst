@@ -22,7 +22,7 @@ If you use **CosmoPyro** in your research, please cite:
 Modified gravity
 ----------------
 
-For applications to modified gravity, please also consider citing:
+Please also consider citing for applications to modified gravity:
 
    E. Colangeli, K. Leyde, T. Baker and A. Chen, *No parametrisation, No
    Problem: A Weakly Modelled Framework to Constrain the Luminosity

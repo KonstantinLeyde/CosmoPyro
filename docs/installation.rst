@@ -29,21 +29,18 @@ Everything else is installed automatically:
      - ``rich``, ``ipython``
 
 The minimum versions are declared in ``pyproject.toml`` and some are recent
-(``numpy>=2.3.5``, ``matplotlib>=3.10.7``), so install into a fresh
-environment rather than an existing one.
+(``numpy>=2.3.5``, ``matplotlib>=3.10.7``).
 
 .. tip::
 
    We recommend `uv <https://docs.astral.sh/uv/>`_ throughout. It is a drop-in
-   replacement for ``pip`` that resolves dependencies significantly faster,
-   which is noticeable when installing JAX. Plain ``pip`` works everywhere
-   ``uv pip`` is shown below.
+   replacement for ``pip`` that resolves dependencies significantly faster.
 
 
 Install from PyPI
 -----------------
 
-The quickest route, if you only want to *use* CosmoPyro:
+The quickest route, if you only want to use CosmoPyro:
 
 .. code-block:: bash
 
@@ -77,24 +74,23 @@ without reinstalling.
 GPU support
 -----------
 
-All numerical work goes through JAX, so running on GPU is a matter of
+We use JAX, so running on GPU is a matter of
 installing the JAX build that matches your cluster's CUDA version. Do this
-*after* installing CosmoPyro, since the base install pulls in CPU-only JAX:
+after installing CosmoPyro, since the base install pulls in CPU-only JAX:
 
 .. code-block:: bash
 
    pip install --upgrade --force-reinstall "jax[cuda12]"
 
-``--force-reinstall`` is what replaces the CPU wheel already present. See the
+``--force-reinstall`` replaces the CPU wheel already present. See the
 `JAX installation guide <https://docs.jax.dev/en/latest/installation.html>`_
 for CUDA 11, TPU, or Apple Metal.
 
 .. note::
 
    CosmoPyro enables 64-bit precision in the example scripts via
-   ``jax.config.update("jax_enable_x64", True)``. Keep this on: the likelihood
-   sums log-probabilities over millions of samples, and float32 is not enough
-   to keep those stable.
+   ``jax.config.update("jax_enable_x64", True)``. Generally, we have found that
+   64-bit precision is very useful for inference.
 
 
 Verify the installation
@@ -129,6 +125,6 @@ Next steps
 
 - :doc:`quickstart` for a first run.
 - The `examples folder <https://github.com/KonstantinLeyde/CosmoPyro/tree/main/examples>`_
-  in the repository, which has its own README.
+  
 - The `CosmoPyro-Demo <https://github.com/KonstantinLeyde/CosmoPyro-Demo>`_
-  repository for standalone worked examples.
+  repository for standalone examples.
