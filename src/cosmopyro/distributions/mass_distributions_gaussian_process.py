@@ -223,7 +223,6 @@ def construct_prob_nn_whitened_field_2D_logMdelta(analysis, params):
 
     num_bins_logM = analysis.binning["deltas"]["log_mass_total_s"].shape[0]
     num_bins_delta = analysis.binning["deltas"]["minus_log_mass_ratio"].shape[0]
-    num_bins_delta_full = 2 * num_bins_delta
 
     # Window: compute m1_s and m2_s at each (logM, delta) grid point
     logM_centers = analysis.binning["centers"]["log_mass_total_s"]
@@ -244,17 +243,16 @@ def construct_prob_nn_whitened_field_2D_logMdelta(analysis, params):
     )
     log_window_logM_delta = log_window_m1 + log_window_m2
 
-    # Build the GRF on the full symmetric grid [logM] x [-delta_max, +delta_max]
-    box_range = jnp.array([[0.0, 1.0], [0.0, 2.0]])
-    box_shape_d = [num_bins_logM, num_bins_delta_full]
+    # Build the GRF on [logM] x [delta >= 0]. Mirroring along delta extends it
+    # to [-delta_max, +delta_max] with phi(logM, delta) = phi(logM, -delta).
     power_spectrum_of_k = get_power_spectrum_2D_from_analysis_kwargs(
         getattr(analysis, "kwargs_analysis", None)
     )
-    field_instance = field.RealField(
-        box_range_d=box_range,
-        box_shape_d=box_shape_d,
+    field_instance = field.MirroredRealField(
+        box_range_d=jnp.array([[0.0, 1.0], [0.0, 1.0]]),
+        box_shape_d=[num_bins_logM, num_bins_delta],
         power_spectrum_of_k=power_spectrum_of_k,
-        replace_FT_with_packing=False,
+        axes_break_periodicity=[False, True],
     )
 
     if "gaussian_F_whitened_spatial_marginal" in mass_params:
@@ -287,24 +285,16 @@ def construct_prob_nn_whitened_field_2D_logMdelta(analysis, params):
     else:
         log_prob_marginal = jnp.zeros(num_bins_logM)
 
-    # White noise has shape [N_logM, N_delta_half] — the independent parameters.
-    # Mirror to enforce exchange symmetry: phi(logM, delta) = phi(logM, -delta).
+    # White noise has shape [N_logM, N_delta_half] — the independent parameters;
+    # the field mirrors it along delta.
     gaussian_F_whitened_half = mass_params["gaussian_F_whitened_spatial"]
     _check_white_noise_shape(
         gaussian_F_whitened_half,
         (num_bins_logM, num_bins_delta),
         "source_frame_masses.gaussian_F_whitened_spatial",
     )
-    gaussian_F_whitened_full = jnp.concatenate(
-        [
-            jnp.flip(gaussian_F_whitened_half, axis=-1),
-            gaussian_F_whitened_half,
-        ],
-        axis=-1,
-    )
-
     field_instance.set_gaussian_F_whitened_from_gaussian_F_whitened_spatial(
-        gaussian_F_whitened_full
+        gaussian_F_whitened_half
     )
     params_power_spectrum = dict(
         amplitude=mass_params["power_spectrum_amplitude"],
@@ -319,7 +309,7 @@ def construct_prob_nn_whitened_field_2D_logMdelta(analysis, params):
     )
 
     log_prob_gaussian = get_log_prob_from_field_prescription(
-        analysis, field_instance.gaussian_F_spatial[:, num_bins_delta:]
+        analysis, field_instance.gaussian_F_spatial
     )
     log_prob_gaussian = log_prob_gaussian - smooth_max(log_prob_gaussian)
 
@@ -384,9 +374,7 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
 
     num_bins_logM = analysis.binning["deltas"]["log_mass_total_s"].shape[0]
     num_bins_delta = analysis.binning["deltas"]["minus_log_mass_ratio"].shape[0]
-    num_bins_delta_full = 2 * num_bins_delta
     num_bins_redshift = analysis.binning["deltas"]["redshift_mass"].shape[0]
-    num_bins_redshift_full = 2 * num_bins_redshift
 
     # Window: compute m1_s and m2_s at each (logM, delta) grid point
     logM_centers = analysis.binning["centers"]["log_mass_total_s"]
@@ -410,21 +398,21 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     )
     log_window_logM_delta_z = log_window_m1 + log_window_m2
 
-    # Build the GRF on the full mirrored grid
-    # [logM] x [-delta_max, +delta_max] x [z_mass mirrored about z_mass_min].
-    # As for logM, the redshift range is mapped to unit length (so the
-    # mirrored box has length 2); its correlation length relative to logM is
-    # set by power_spectrum_relative_scale_log_mass_total_s_to_redshift.
-    box_range = jnp.array([[0.0, 1.0], [0.0, 2.0], [0.0, 2.0]])
-    box_shape_d = [num_bins_logM, num_bins_delta_full, num_bins_redshift_full]
+    # Build the GRF on [logM] x [delta >= 0] x [z_mass]. Mirroring along delta
+    # enforces exchange symmetry, phi(logM, delta, z) = phi(logM, -delta, z);
+    # mirroring along redshift breaks the FFT periodicity that would otherwise
+    # tie z_mass_max to z_mass_min (at the cost of zero slope and ~2x variance
+    # at the z edges). As for logM, the redshift range is mapped to unit
+    # length; its correlation length relative to logM is set by
+    # power_spectrum_relative_scale_log_mass_total_s_to_redshift.
     power_spectrum_of_k = get_power_spectrum_3D_from_analysis_kwargs(
         getattr(analysis, "kwargs_analysis", None)
     )
-    field_instance = field.RealField(
-        box_range_d=box_range,
-        box_shape_d=box_shape_d,
+    field_instance = field.MirroredRealField(
+        box_range_d=jnp.array([[0.0, 1.0], [0.0, 1.0], [0.0, 1.0]]),
+        box_shape_d=[num_bins_logM, num_bins_delta, num_bins_redshift],
         power_spectrum_of_k=power_spectrum_of_k,
-        replace_FT_with_packing=False,
+        axes_break_periodicity=[False, True, True],
     )
 
     if "gaussian_F_whitened_spatial_marginal" in mass_params:
@@ -433,28 +421,15 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
         )
 
     # White noise has shape [N_logM, N_delta_half, N_z_mass] — the independent
-    # parameters. Mirror along delta to enforce exchange symmetry:
-    # phi(logM, delta, z) = phi(logM, -delta, z). Mirror along redshift too,
-    # to break the FFT periodicity that would otherwise tie z_mass_max to
-    # z_mass_min (at the cost of zero slope and ~2x variance at the z edges).
+    # parameters; the field mirrors it along delta and redshift.
     gaussian_F_whitened_half = mass_params["gaussian_F_whitened_spatial"]
     _check_white_noise_shape(
         gaussian_F_whitened_half,
         (num_bins_logM, num_bins_delta, num_bins_redshift),
         "source_frame_masses.gaussian_F_whitened_spatial",
     )
-    gaussian_F_whitened_full = gaussian_F_whitened_half
-    for axis in (-2, -1):
-        gaussian_F_whitened_full = jnp.concatenate(
-            [
-                jnp.flip(gaussian_F_whitened_full, axis=axis),
-                gaussian_F_whitened_full,
-            ],
-            axis=axis,
-        )
-
     field_instance.set_gaussian_F_whitened_from_gaussian_F_whitened_spatial(
-        gaussian_F_whitened_full
+        gaussian_F_whitened_half
     )
     params_power_spectrum = dict(
         amplitude=mass_params["power_spectrum_amplitude"],
@@ -473,8 +448,7 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     )
 
     log_prob_gaussian = get_log_prob_from_field_prescription(
-        analysis,
-        field_instance.gaussian_F_spatial[:, num_bins_delta:, num_bins_redshift:],
+        analysis, field_instance.gaussian_F_spatial
     )
     # Per redshift slice, since each slice is normalized separately below.
     log_prob_gaussian = log_prob_gaussian - smooth_max(log_prob_gaussian, axis=(0, 1))

@@ -9,6 +9,7 @@ from . import pack_fftn_values as pack_fftn_values
 __all__ = [
     "NUMERICAL_EPSILON",
     "Field",
+    "MirroredRealField",
     "RealField",
     "RealLogNormalField",
     "add_axes",
@@ -513,6 +514,204 @@ class RealField(Field):
         )
 
         return log_theta_probability
+
+
+class MirroredRealField(RealField):
+    """Real Gaussian field that is not periodic along selected axes.
+
+    ``box_range_d`` and ``box_shape_d`` describe the physical box. Along each
+    axis with ``axes_break_periodicity[i]`` the box is doubled internally by
+    mirroring the white noise about the lower edge, [flip(w), w]; the FFT then
+    runs on the doubled box and the field is cropped back to the physical half.
+    The doubled box has period 2L, so the lower and upper edges of the
+    physical box are no longer tied together, and the field has zero slope at
+    both edges. The white noise, the independent parameters, keeps the
+    physical shape.
+
+    Mirroring adds the field's correlation with its own mirror images, so the
+    variance rises towards the mirrored edges (to ~2x per axis). With
+    ``axes_correct_larger_variance[i]`` this excess is divided out exactly
+    along that axis:
+
+        Var phi(x) = Var_0 * sum_S rho(x - R_S x),
+
+    where S runs over the subsets of mirrored axes, R_S reflects along the axes
+    in S and rho is the correlation function of the doubled periodic field.
+    Correcting a set T of axes divides by sqrt(sum_S rho / sum_{S not
+    touching T} rho), which leaves the variance independent of position along
+    T (and flat everywhere when all mirrored axes are corrected).
+    """
+
+    def __init__(
+        self,
+        box_range_d,
+        box_shape_d,
+        power_spectrum_of_k,
+        axes_break_periodicity=None,
+        axes_correct_larger_variance=None,
+        apply_log_transform=False,
+        debug=False,
+        batch_shape=(),
+        replace_FT_with_packing=False,
+    ):
+
+        if apply_log_transform:
+            raise NotImplementedError(
+                "MirroredRealField does not support apply_log_transform."
+            )
+
+        dimensions = len(box_shape_d)
+        self.axes_break_periodicity = self._as_axis_flags(
+            axes_break_periodicity, dimensions, "axes_break_periodicity"
+        )
+        self.axes_correct_larger_variance = self._as_axis_flags(
+            axes_correct_larger_variance, dimensions, "axes_correct_larger_variance"
+        )
+        for mirrored, corrected in zip(
+            self.axes_break_periodicity, self.axes_correct_larger_variance
+        ):
+            if corrected and not mirrored:
+                raise ValueError(
+                    "axes_correct_larger_variance can only be set for axes in "
+                    "axes_break_periodicity."
+                )
+
+        self.physical_box_range_d = jnp.asarray(box_range_d)
+        self.physical_box_shape_d = tuple(int(n) for n in box_shape_d)
+
+        full_box_range_d = []
+        full_box_shape_d = []
+        for (low, high), n, mirrored in zip(
+            box_range_d, self.physical_box_shape_d, self.axes_break_periodicity
+        ):
+            full_box_range_d.append([2 * low - high if mirrored else low, high])
+            full_box_shape_d.append(2 * n if mirrored else n)
+
+        super().__init__(
+            box_range_d=jnp.array(full_box_range_d),
+            box_shape_d=full_box_shape_d,
+            power_spectrum_of_k=power_spectrum_of_k,
+            debug=debug,
+            batch_shape=batch_shape,
+            replace_FT_with_packing=replace_FT_with_packing,
+        )
+
+    @staticmethod
+    def _as_axis_flags(flags, dimensions, name):
+        if flags is None:
+            return (False,) * dimensions
+        flags = tuple(bool(f) for f in flags)
+        if len(flags) != dimensions:
+            raise ValueError(
+                f"{name} needs one entry per axis ({dimensions}), got {len(flags)}."
+            )
+        return flags
+
+    def _physical_slices(self):
+        return tuple(
+            slice(n, None) if mirrored else slice(None)
+            for n, mirrored in zip(
+                self.physical_box_shape_d, self.axes_break_periodicity
+            )
+        )
+
+    def sample_gaussian_F_whitened_fourier(self, key):
+
+        shape = tuple(self.batch_shape) + self.physical_box_shape_d
+        self.sample_gaussian_F_whitened_spatial_from_shape(key, shape)
+
+    def set_gaussian_F_whitened_from_gaussian_F_whitened_spatial(
+        self, gaussian_F_whitened_spatial
+    ):
+        """Set the white noise from its physical-box values (mirrored here)."""
+
+        shape = tuple(gaussian_F_whitened_spatial.shape[-self.dimensions :])
+        if shape != self.physical_box_shape_d:
+            # RealField's FFT would silently pad or crop a mismatched input
+            raise ValueError(
+                f"White noise has shape {shape} along the box axes, expected "
+                f"the physical box shape {self.physical_box_shape_d}."
+            )
+
+        gaussian_F_whitened_full = gaussian_F_whitened_spatial
+        for axis, mirrored in zip(self.box_axes, self.axes_break_periodicity):
+            if mirrored:
+                gaussian_F_whitened_full = jnp.concatenate(
+                    [
+                        jnp.flip(gaussian_F_whitened_full, axis=axis),
+                        gaussian_F_whitened_full,
+                    ],
+                    axis=axis,
+                )
+
+        super().set_gaussian_F_whitened_from_gaussian_F_whitened_spatial(
+            gaussian_F_whitened_full
+        )
+
+    def compute_gaussian_F_spatial(self):
+
+        super().compute_gaussian_F_spatial()
+        self.gaussian_F_spatial_full = self.gaussian_F_spatial
+
+        gaussian_F_spatial = self.gaussian_F_spatial_full[
+            (Ellipsis,) + self._physical_slices()
+        ]
+        if any(self.axes_correct_larger_variance):
+            gaussian_F_spatial = gaussian_F_spatial / jnp.sqrt(
+                self.get_mirror_variance_factor(corrected_axes_only=True)
+            )
+        self.gaussian_F_spatial = gaussian_F_spatial
+
+    def get_mirror_variance_factor(self, corrected_axes_only=False):
+        """Var phi / Var_0 on the physical box, from the power spectrum.
+
+        With ``corrected_axes_only`` it returns the share of the excess due to
+        the axes in ``axes_correct_larger_variance``, i.e. the factor the field
+        is divided by (squared). Requires the power spectrum to be computed.
+        """
+
+        # covariance of the doubled periodic field as a function of the lag,
+        # up to a constant that cancels in the ratios below
+        covariance = jnp.fft.irfftn(
+            self.sqrt_power_spectrum_pixelation**2,
+            axes=self.box_axes,
+            s=self.box_shape_d,
+        ).real
+        covariance_zero_lag = covariance[(Ellipsis,) + (0,) * self.dimensions]
+
+        mirrored_axes = [
+            i for i, mirrored in enumerate(self.axes_break_periodicity) if mirrored
+        ]
+
+        def sum_over_images(axes_subsets):
+            total = 0.0
+            for subset in axes_subsets:
+                # lag between bin i and its image: 2 i + 1 pixels along
+                # reflected axes, 0 along the others
+                lags = [
+                    (
+                        2 * jnp.arange(n) + 1
+                        if a in subset
+                        else jnp.zeros(n, dtype=int)
+                    )
+                    for a, n in enumerate(self.physical_box_shape_d)
+                ]
+                total = total + covariance[(Ellipsis,) + jnp.ix_(*lags)]
+            return total / covariance_zero_lag[(Ellipsis,) + (None,) * self.dimensions]
+
+        def subsets(axes):
+            result = [()]
+            for a in axes:
+                result = result + [s + (a,) for s in result]
+            return result
+
+        factor = sum_over_images(subsets(mirrored_axes))
+        if corrected_axes_only:
+            uncorrected_axes = [
+                a for a in mirrored_axes if not self.axes_correct_larger_variance[a]
+            ]
+            factor = factor / sum_over_images(subsets(uncorrected_axes))
+        return factor
 
 
 class RealLogNormalField(RealField):
