@@ -7,6 +7,7 @@ from .grid_distributions import (
 )
 
 __all__ = [
+    "MASS_WINDOW_REDSHIFT_FACTOR_FLOOR",
     "SMOOTHING_SCALE",
     "complete_mass_bins_for_mass_ratio_models",
     "construct_prob_nn_multipeak_1D",
@@ -15,6 +16,7 @@ __all__ = [
     "construct_running_power_law_prob_mass_ratio_nn",
     "get_log_window_mass_ratio",
     "get_log_window_mass_s",
+    "get_log_window_mass_s_redshift",
     "get_mass_delta_m2",
     "get_mass_min",
     "log_lvk_smoothing_low_mass_approximation",
@@ -434,6 +436,54 @@ def get_log_window_mass_s(
     )
 
     return log_window
+
+
+# Lower floor for the factor (1 + c z) of the redshift-dependent window edges.
+# It only matters when c < -1 / z_max, where the edge (and its fractional
+# smoothing scale) would otherwise pass through zero and flip sign.
+MASS_WINDOW_REDSHIFT_FACTOR_FLOOR = 1e-3
+
+
+def get_log_window_mass_s_redshift(
+    analysis,
+    params,
+    bins_mass_s,
+    bins_redshift=None,
+    mass_params_key="source_frame_masses",
+):
+    """Mass window whose edges change linearly with redshift.
+
+    mass_min(z) = mass_min * (1 + d_mass_min_over_d_z_fractional * z), and
+    likewise for mass_max, so mass_min and mass_max are the edges at z = 0 and
+    the coefficients are the fractional change of the edges per unit redshift.
+    The smoothing scales stay fractional, i.e. they follow the edges.
+
+    ``bins_redshift`` defaults to the redshift_mass centers. The returned
+    window has shape ``bins_mass_s.shape + bins_redshift.shape``.
+    """
+
+    if bins_redshift is None:
+        bins_redshift = analysis.binning["centers"]["redshift_mass"]
+
+    def redshift_factor(name):
+        factor = 1.0 + mass_params.get(name, 0.0) * bins_redshift
+        return jnp.maximum(factor, MASS_WINDOW_REDSHIFT_FACTOR_FLOOR)
+
+    mass_params = params[mass_params_key]
+    mass_min = mass_params["mass_min"] * redshift_factor(
+        "d_mass_min_over_d_z_fractional"
+    )
+    mass_max = mass_params["mass_max"] * redshift_factor(
+        "d_mass_max_over_d_z_fractional"
+    )
+    sigma_low = mass_params["sigma_low_fractional"] * mass_min
+    sigma_high = mass_params["sigma_high_fractional"] * mass_max
+
+    bins_mass_s = jnp.asarray(bins_mass_s)[(...,) + (None,) * bins_redshift.ndim]
+
+    return log_smooth_heaviside_window(
+        bins_mass_s, mass_min, mass_max, sigma_low, sigma_high
+    )
 
 
 def get_log_window_mass_ratio(analysis, params):

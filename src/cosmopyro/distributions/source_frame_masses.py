@@ -15,10 +15,12 @@ from .mass_distributions_gaussian_process import (
     construct_log_prob_nn_whitened_field_1D,
     construct_prob_nn_whitened_field_2D_logMdelta,
     construct_prob_nn_whitened_field_2D_m1sq,
+    construct_prob_nn_whitened_field_3D_logMdelta,
 )
 
 __all__ = [
     "construct_conditionals_from_prob_logM_delta",
+    "construct_conditionals_from_prob_logM_delta_redshift",
     "construct_conditionals_from_prob_mass_1_s_mass_ratio",
     "construct_mass_1_s_prob_nn",
     "construct_mass_ratio_prob_nn",
@@ -28,6 +30,9 @@ __all__ = [
 
 def _safe_conditional_from_joint(joint_prob, marginal_prob, x_widths):
     """Return p(x | y) from p(y, x), avoiding NaNs for zero-marginal rows.
+
+    x is the last axis of ``joint_prob``; y may span several leading axes, in
+    which case ``marginal_prob`` has the shape of those leading axes.
 
     The guard is ``> sqrt(tiny)``, not ``> 0``. Reverse mode differentiates the
     division as ``-joint / marginal**2``; below sqrt of the smallest normal
@@ -39,10 +44,10 @@ def _safe_conditional_from_joint(joint_prob, marginal_prob, x_widths):
     floor = jnp.sqrt(jnp.finfo(marginal_prob.dtype).tiny)
     marginal_positive = marginal_prob > floor
     marginal_safe = jnp.where(marginal_positive, marginal_prob, 1.0)
-    conditional = joint_prob / marginal_safe[:, None]
+    conditional = joint_prob / marginal_safe[..., None]
 
     uniform_density = jnp.ones_like(joint_prob) / jnp.sum(x_widths)
-    return jnp.where(marginal_positive[:, None], conditional, uniform_density)
+    return jnp.where(marginal_positive[..., None], conditional, uniform_density)
 
 
 def construct_source_frame_mass_model(analysis, params, interpolation="smooth_log"):
@@ -135,6 +140,47 @@ def _construct_joint_mass_model(
             },
             cond=prob_delta_given_logM,
             continuous_y_names=["log_mass_total_s"],
+            interpolation=interpolation,
+        )
+
+        return model_logM, model_delta
+
+    elif source_frame_masses_name in ["fourier_gp_3D_logMdelta"]:
+        prob_logM_delta_z_nn = construct_prob_nn_whitened_field_3D_logMdelta(
+            analysis, params
+        )
+
+        prob_logM_given_z, prob_delta_given_logM_z = (
+            construct_conditionals_from_prob_logM_delta_redshift(
+                analysis, prob_logM_delta_z_nn
+            )
+        )
+
+        # The conditioning variable is the physical "redshift" (so the
+        # likelihood data dict needs no extra key), but it lives on the coarse
+        # redshift_mass binning.
+        redshift_bins = {"redshift": analysis.binning["boundaries"]["redshift_mass"]}
+        model_logM = InterpolatedConditional1D(
+            x_bins={
+                "log_mass_total_s": analysis.binning["boundaries"]["log_mass_total_s"]
+            },
+            y_bins=redshift_bins,
+            cond=prob_logM_given_z,
+            continuous_y_names=["redshift"],
+            interpolation=interpolation,
+        )
+        model_delta = InterpolatedConditional1D(
+            x_bins={
+                "minus_log_mass_ratio": analysis.binning["boundaries"][
+                    "minus_log_mass_ratio"
+                ]
+            },
+            y_bins={
+                "log_mass_total_s": analysis.binning["boundaries"]["log_mass_total_s"],
+                **redshift_bins,
+            },
+            cond=prob_delta_given_logM_z,
+            continuous_y_names=["log_mass_total_s", "redshift"],
             interpolation=interpolation,
         )
 
@@ -242,6 +288,50 @@ def construct_conditionals_from_prob_logM_delta(analysis, prob_logM_delta_nn):
     )
 
     return prob_logM, prob_delta_given_logM
+
+
+def construct_conditionals_from_prob_logM_delta_redshift(
+    analysis, prob_logM_delta_z_nn
+):
+    """Factorize p(logM, delta | z) into p(logM | z) and p(delta | logM, z).
+
+    ``prob_logM_delta_z_nn`` has shape (logM, delta, redshift_mass), with z on
+    the coarse ``redshift_mass`` binning. The
+    returned arrays follow the ``InterpolatedConditional1D`` layout
+    ``(x, *y_sorted)``: (logM, redshift_mass) and
+    (delta, logM, redshift_mass).
+    """
+
+    edges_dict = analysis.binning["boundaries"]
+    delta_dict = analysis.binning["deltas"]
+
+    # Marginalize over minus_log_mass_ratio to get p(logM | z)
+    prob_logM_z_nn = jnp.sum(
+        prob_logM_delta_z_nn * delta_dict["minus_log_mass_ratio"][None, :, None],
+        axis=1,
+    )
+    prob_logM_given_z = normalize_cond_interpolated_1d(
+        x_edges=edges_dict["log_mass_total_s"],
+        cond=prob_logM_z_nn,
+    )
+
+    # Conditional p(delta | logM, z), computed with delta as the last axis
+    prob_logM_z_delta_nn = jnp.moveaxis(prob_logM_delta_z_nn, 1, -1)
+    prob_delta_given_logM_z_nn = _safe_conditional_from_joint(
+        prob_logM_z_delta_nn,
+        prob_logM_z_nn,
+        delta_dict["minus_log_mass_ratio"],
+    )
+
+    # (logM, z, delta) -> (delta, logM, z)
+    prob_delta_given_logM_z_nn = jnp.moveaxis(prob_delta_given_logM_z_nn, -1, 0)
+
+    prob_delta_given_logM_z = normalize_cond_interpolated_1d(
+        x_edges=edges_dict["minus_log_mass_ratio"],
+        cond=prob_delta_given_logM_z_nn,
+    )
+
+    return prob_logM_given_z, prob_delta_given_logM_z
 
 
 def construct_conditionals_from_prob_mass_1_s_mass_ratio(

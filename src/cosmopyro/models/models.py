@@ -207,7 +207,19 @@ def model_evaluate_p_theta(
             x2 = {"minus_log_mass_ratio": jnp.broadcast_to(d_grid, shape)}
             y2 = {"log_mass_total_s": s_grid}
 
-        log_prob_dim1 = model_mass_dim1.log_prob(x1)
+        y1 = {}
+        if "redshift" in model_mass_dim1.y_names:
+            # redshift-dependent mass model: evaluate on the coarse
+            # redshift_mass centers, adding a trailing redshift axis
+            z_mass = analysis.binning["centers"]["redshift_mass"]
+            shape = shape + (z_mass.shape[0],)
+            x1 = {k: jnp.broadcast_to(v[..., None], shape) for k, v in x1.items()}
+            x2 = {k: jnp.broadcast_to(v[..., None], shape) for k, v in x2.items()}
+            y2 = {k: jnp.broadcast_to(v[..., None], shape) for k, v in y2.items()}
+            y1 = {"redshift": jnp.broadcast_to(z_mass, shape)}
+            y2["redshift"] = y1["redshift"]
+
+        log_prob_dim1 = model_mass_dim1.log_prob(x1, y1)
         log_prob_dim2 = model_mass_dim2.log_prob(x2, y2)
         log_prob_mass_1_s_mass_ratio = log_prob_dim1 + log_prob_dim2
 
@@ -216,10 +228,13 @@ def model_evaluate_p_theta(
             # p(m1s, q) = p(s, delta) * |d(s,delta)/d(m1s,q)| = p(s, delta) / (m1s * q)
             m1s = grid_ref["mass_1_s"]
             q = grid_ref["mass_ratio"]
+            log_jacobian_grid = jnp.log(m1s[:, None]) + jnp.log(q[None, :])
+            log_jacobian_grid = log_jacobian_grid.reshape(
+                log_jacobian_grid.shape
+                + (1,) * (log_prob_mass_1_s_mass_ratio.ndim - 2)
+            )
             log_prob_mass_1_s_mass_ratio = (
-                log_prob_mass_1_s_mass_ratio
-                - jnp.log(m1s[:, None])
-                - jnp.log(q[None, :])
+                log_prob_mass_1_s_mass_ratio - log_jacobian_grid
             )
 
         numpyro.deterministic(

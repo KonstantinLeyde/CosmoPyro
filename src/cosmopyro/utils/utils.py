@@ -772,13 +772,17 @@ KWARGS_ANALYSIS_DEFAULT = dict(
             max=3.0,
             num=200,
         ),
+        redshift_mass=dict(
+            num=20,
+        ),
     ),
 )
 
 
 def get_binning_from_kwargs_analysis(kwargs_analysis=None, discretization_3d=None):
 
-    if kwargs_analysis is None:
+    uses_default_bins = kwargs_analysis is None
+    if uses_default_bins:
         kwargs_analysis = KWARGS_ANALYSIS_DEFAULT
 
     binning = dict(
@@ -799,6 +803,25 @@ def get_binning_from_kwargs_analysis(kwargs_analysis=None, discretization_3d=Non
                 kwargs_analysis["bins"][key]["max"],
                 kwargs_analysis["bins"][key]["num"] + 1,
             )
+
+    # redshift_mass is a coarse redshift grid on which the mass distribution
+    # may evolve. It shares its range with the fine "redshift" grid, so only
+    # the number of bins is configurable. The default bins skip it quietly
+    # when there is no redshift grid; an explicit request requires one.
+    skip_redshift_mass = uses_default_bins and "redshift" not in binning["boundaries"]
+    if "redshift_mass" in kwargs_analysis["bins"] and not skip_redshift_mass:
+        bins_redshift_mass = kwargs_analysis["bins"]["redshift_mass"]
+        if set(bins_redshift_mass) != {"num"}:
+            raise ValueError(
+                "bins.redshift_mass only accepts 'num'; its range is taken from "
+                f"the redshift grid. Got keys {sorted(bins_redshift_mass)}."
+            )
+        if "redshift" not in binning["boundaries"]:
+            raise ValueError("bins.redshift_mass requires a redshift grid.")
+        z_edges = binning["boundaries"]["redshift"]
+        binning["boundaries"]["redshift_mass"] = jnp.linspace(
+            z_edges[0], z_edges[-1], bins_redshift_mass["num"] + 1
+        )
 
     binning["centers"], binning["deltas"] = {}, {}
     for key in binning["boundaries"].keys():
