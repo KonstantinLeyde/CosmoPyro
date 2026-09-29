@@ -775,6 +775,7 @@ KWARGS_ANALYSIS_DEFAULT = dict(
         ),
         redshift_mass_evolving=dict(
             num=20,
+            max=1.0
         ),
     ),
 )
