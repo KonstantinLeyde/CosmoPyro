@@ -862,7 +862,9 @@ def get_binning_from_kwargs_analysis(kwargs_analysis=None, discretization_3d=Non
         uses_default_bins and redshift_edges is None
     ):
         binning["boundaries"]["redshift_mass_evolving"] = (
-            _get_redshift_mass_evolving_edges(bins_redshift_mass_evolving, redshift_edges)
+            _get_redshift_mass_evolving_edges(
+                bins_redshift_mass_evolving, redshift_edges
+            )
         )
 
     binning["centers"], binning["deltas"] = {}, {}
