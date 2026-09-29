@@ -783,17 +783,19 @@ KWARGS_ANALYSIS_DEFAULT = dict(
 
 def get_redshift_mass_edges_with_constant_bin(analysis):
     """redshift_mass_evolving edges, extended by one bin up to the top of the
-    redshift grid if they end below it.
+    redshift grid if bins.redshift_mass_evolving.max is set (it is then below
+    the top).
 
     Redshift-dependent mass models repeat their last slice in this bin, i.e.
-    they are constant above bins.redshift_mass_evolving.max. Use these edges
-    for lookups: redshifts above the evolving edges would be out of bounds.
+    they are constant above that max. Use these edges for lookups: redshifts
+    above the evolving edges would be out of bounds. The decision is taken
+    from the settings, since the binning arrays may be traced.
     """
 
     edges = analysis.binning["boundaries"]["redshift_mass_evolving"]
-    z_max = analysis.binning["boundaries"]["redshift"][-1]
-    if edges[-1] < z_max:
-        edges = jnp.append(edges, z_max)
+    bins = (getattr(analysis, "kwargs_analysis", None) or {}).get("bins", {})
+    if "max" in bins.get("redshift_mass_evolving", {}):
+        edges = jnp.append(edges, analysis.binning["boundaries"]["redshift"][-1])
     return edges
 
 
@@ -840,10 +842,11 @@ def get_binning_from_kwargs_analysis(kwargs_analysis=None, discretization_3d=Non
         z_edges = binning["boundaries"]["redshift"]
         z_min, z_max = float(z_edges[0]), float(z_edges[-1])
         z_max_evolving = float(bins_redshift_mass.get("max", z_max))
-        if not z_min < z_max_evolving <= z_max:
+        if "max" in bins_redshift_mass and not z_min < z_max_evolving < z_max:
             raise ValueError(
                 f"bins.redshift_mass_evolving.max = {z_max_evolving} must lie "
-                f"within the redshift grid [{z_min}, {z_max}]."
+                f"strictly inside the redshift grid ({z_min}, {z_max}); omit it "
+                "to evolve over the whole grid."
             )
         binning["boundaries"]["redshift_mass_evolving"] = jnp.linspace(
             z_min, z_max_evolving, bins_redshift_mass["num"] + 1
