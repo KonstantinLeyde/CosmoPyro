@@ -458,12 +458,12 @@ def get_log_window_mass_s_redshift(
     the coefficients are the fractional change of the edges per unit redshift.
     The smoothing scales stay fractional, i.e. they follow the edges.
 
-    ``bins_redshift`` defaults to the redshift_mass centers. The returned
-    window has shape ``bins_mass_s.shape + bins_redshift.shape``.
+    ``bins_redshift`` defaults to the redshift_mass_evolving centers. The
+    returned window has shape ``bins_mass_s.shape + bins_redshift.shape``.
     """
 
     if bins_redshift is None:
-        bins_redshift = analysis.binning["centers"]["redshift_mass"]
+        bins_redshift = analysis.binning["centers"]["redshift_mass_evolving"]
 
     def redshift_factor(name):
         factor = 1.0 + mass_params.get(name, 0.0) * bins_redshift

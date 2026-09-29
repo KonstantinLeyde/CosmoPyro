@@ -210,8 +210,8 @@ def model_evaluate_p_theta(
         y1 = {}
         if "redshift" in model_mass_dim1.y_names:
             # redshift-dependent mass model: evaluate on the coarse
-            # redshift_mass centers, adding a trailing redshift axis
-            z_mass = analysis.binning["centers"]["redshift_mass"]
+            # redshift_mass_evolving centers, adding a trailing redshift axis
+            z_mass = analysis.binning["centers"]["redshift_mass_evolving"]
             shape = shape + (z_mass.shape[0],)
             x1 = {k: jnp.broadcast_to(v[..., None], shape) for k, v in x1.items()}
             x2 = {k: jnp.broadcast_to(v[..., None], shape) for k, v in x2.items()}

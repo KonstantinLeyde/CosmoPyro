@@ -28,6 +28,7 @@ __all__ = [
     "get_binning_from_kwargs_analysis",
     "get_error_messages_luminosity_distance_within_grid",
     "get_filename_from_path",
+    "get_redshift_mass_edges_with_constant_bin",
     "is_latent_sample_site",
     "is_svi_initialization",
     "load_yaml_file",
@@ -772,11 +773,27 @@ KWARGS_ANALYSIS_DEFAULT = dict(
             max=3.0,
             num=200,
         ),
-        redshift_mass=dict(
+        redshift_mass_evolving=dict(
             num=20,
         ),
     ),
 )
+
+
+def get_redshift_mass_edges_with_constant_bin(analysis):
+    """redshift_mass_evolving edges, extended by one bin up to the top of the
+    redshift grid if they end below it.
+
+    Redshift-dependent mass models repeat their last slice in this bin, i.e.
+    they are constant above bins.redshift_mass_evolving.max. Use these edges
+    for lookups: redshifts above the evolving edges would be out of bounds.
+    """
+
+    edges = analysis.binning["boundaries"]["redshift_mass_evolving"]
+    z_max = analysis.binning["boundaries"]["redshift"][-1]
+    if edges[-1] < z_max:
+        edges = jnp.append(edges, z_max)
+    return edges
 
 
 def get_binning_from_kwargs_analysis(kwargs_analysis=None, discretization_3d=None):
@@ -804,23 +821,31 @@ def get_binning_from_kwargs_analysis(kwargs_analysis=None, discretization_3d=Non
                 kwargs_analysis["bins"][key]["num"] + 1,
             )
 
-    # redshift_mass is a coarse redshift grid on which the mass distribution
-    # may evolve. It shares its range with the fine "redshift" grid, so only
-    # the number of bins is configurable. The default bins skip it quietly
-    # when there is no redshift grid; an explicit request requires one.
+    # redshift_mass_evolving: coarse grid on which the mass distribution
+    # evolves, `num` equal bins from the bottom of the redshift grid up to
+    # `max` (default: its top). Above `max` the mass distribution is constant,
+    # see get_redshift_mass_edges_with_constant_bin. The default bins skip it
+    # quietly when there is no redshift grid; an explicit request requires one.
     skip_redshift_mass = uses_default_bins and "redshift" not in binning["boundaries"]
-    if "redshift_mass" in kwargs_analysis["bins"] and not skip_redshift_mass:
-        bins_redshift_mass = kwargs_analysis["bins"]["redshift_mass"]
-        if set(bins_redshift_mass) != {"num"}:
+    if "redshift_mass_evolving" in kwargs_analysis["bins"] and not skip_redshift_mass:
+        bins_redshift_mass = kwargs_analysis["bins"]["redshift_mass_evolving"]
+        if not {"num"} <= set(bins_redshift_mass) <= {"num", "max"}:
             raise ValueError(
-                "bins.redshift_mass only accepts 'num'; its range is taken from "
-                f"the redshift grid. Got keys {sorted(bins_redshift_mass)}."
+                "bins.redshift_mass_evolving accepts 'num' and optionally 'max', "
+                f"got keys {sorted(bins_redshift_mass)}."
             )
         if "redshift" not in binning["boundaries"]:
-            raise ValueError("bins.redshift_mass requires a redshift grid.")
+            raise ValueError("bins.redshift_mass_evolving requires a redshift grid.")
         z_edges = binning["boundaries"]["redshift"]
-        binning["boundaries"]["redshift_mass"] = jnp.linspace(
-            z_edges[0], z_edges[-1], bins_redshift_mass["num"] + 1
+        z_min, z_max = float(z_edges[0]), float(z_edges[-1])
+        z_max_evolving = float(bins_redshift_mass.get("max", z_max))
+        if not z_min < z_max_evolving <= z_max:
+            raise ValueError(
+                f"bins.redshift_mass_evolving.max = {z_max_evolving} must lie "
+                f"within the redshift grid [{z_min}, {z_max}]."
+            )
+        binning["boundaries"]["redshift_mass_evolving"] = jnp.linspace(
+            z_min, z_max_evolving, bins_redshift_mass["num"] + 1
         )
 
     binning["centers"], binning["deltas"] = {}, {}

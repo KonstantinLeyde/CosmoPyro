@@ -345,15 +345,16 @@ def construct_prob_nn_whitened_field_2D_logMdelta(analysis, params):
 
 def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     """
-    Build a 3D GRF on (log_mass_total_s, minus_log_mass_ratio, redshift_mass)
+    Build a 3D GRF on (log_mass_total_s, minus_log_mass_ratio, redshift)
     coordinates with exchange symmetry enforced by mirroring the white noise in
     the minus_log_mass_ratio direction before FFT. The white noise is mirrored
-    in the redshift_mass direction as well, so that the field is not periodic
-    in redshift.
+    in the redshift direction as well, so that the field is not periodic in
+    redshift.
 
-    redshift_mass is a coarse redshift binning (``bins.redshift_mass`` in the
-    analysis settings), separate from the fine ``redshift`` grid, so that the
-    number of Fourier modes along redshift stays small.
+    Redshift lives on the coarse ``redshift_mass_evolving`` bins (separate
+    from the fine ``redshift`` grid, to keep the number of Fourier modes
+    small). Above them the mass distribution is held constant, see
+    ``get_redshift_mass_edges_with_constant_bin``.
 
     The GRF grid covers [logM_min, logM_max] x [-delta_max, +delta_max] x
     [2 z_mass_min - z_mass_max, z_mass_max] where delta = minus_log_mass_ratio.
@@ -362,19 +363,19 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     construction.
 
     Returns prob_nn with shape (log_mass_total_s, minus_log_mass_ratio >= 0,
-    redshift_mass), normalized over (logM, delta) separately for each
-    redshift_mass bin, i.e. p(logM, delta | z).
+    redshift_mass_evolving), normalized over (logM, delta) separately in each
+    redshift bin, i.e. p(logM, delta | z).
     """
 
-    if "redshift_mass" not in analysis.binning["deltas"]:
+    if "redshift_mass_evolving" not in analysis.binning["deltas"]:
         raise ValueError(
-            "The 3D logMdelta mass model requires a 'redshift_mass' entry in "
-            "the analysis bins (num)."
+            "The 3D logMdelta mass model requires a 'redshift_mass_evolving' "
+            "entry in the analysis bins (num, optionally max)."
         )
 
     num_bins_logM = analysis.binning["deltas"]["log_mass_total_s"].shape[0]
     num_bins_delta = analysis.binning["deltas"]["minus_log_mass_ratio"].shape[0]
-    num_bins_redshift = analysis.binning["deltas"]["redshift_mass"].shape[0]
+    num_bins_redshift = analysis.binning["deltas"]["redshift_mass_evolving"].shape[0]
 
     # Window: compute m1_s and m2_s at each (logM, delta) grid point
     logM_centers = analysis.binning["centers"]["log_mass_total_s"]
@@ -388,8 +389,8 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     mass_params_key = "source_frame_masses"
     mass_params = params[mass_params_key]
 
-    # Window edges move with redshift, evaluated at the redshift_mass centers:
-    # shape (logM, delta, z_mass)
+    # Window edges move with redshift, evaluated at the redshift_mass_evolving
+    # centers: shape (logM, delta, z_mass)
     log_window_m1 = get_log_window_mass_s_redshift(
         analysis, params, bins_mass_s=m1_s_grid, mass_params_key=mass_params_key
     )
@@ -466,7 +467,7 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
         log_prob_gaussian + log_window_logM_delta_z + log_prior[..., None]
     )
 
-    # Normalize over (logM, delta >= 0) in each redshift_mass bin: p(logM, delta | z)
+    # Normalize over (logM, delta >= 0) in each redshift bin: p(logM, delta | z)
     delta_logM = analysis.binning["deltas"]["log_mass_total_s"]
     delta_delta = analysis.binning["deltas"]["minus_log_mass_ratio"]
     normalization = jnp.sum(
