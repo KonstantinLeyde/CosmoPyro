@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from ..utils.utils import get_redshift_mass_edges_with_constant_bin
+from ..utils.utils import get_redshift_mass_evolving_edges_with_constant_bin
 from .grid_distributions import (
     InterpolatedConditional1D,
     normalize_cond_interpolated_1d,
@@ -153,7 +153,7 @@ def _construct_joint_mass_model(
 
         # Constant above bins.redshift_mass_evolving.max: the extra bin repeats
         # the last redshift slice.
-        redshift_edges = get_redshift_mass_edges_with_constant_bin(analysis)
+        redshift_edges = get_redshift_mass_evolving_edges_with_constant_bin(analysis)
         if redshift_edges.shape[0] - 1 > prob_logM_delta_z_nn.shape[-1]:
             prob_logM_delta_z_nn = jnp.concatenate(
                 [prob_logM_delta_z_nn, prob_logM_delta_z_nn[..., -1:]], axis=-1
@@ -166,7 +166,8 @@ def _construct_joint_mass_model(
         )
 
         # The conditioning variable is the physical "redshift" (so the
-        # likelihood data dict needs no extra key), on the coarse redshift bins.
+        # likelihood data dict needs no extra key), on the redshift_mass_evolving
+        # bins plus the constant bin.
         redshift_bins = {"redshift": redshift_edges}
         model_logM = InterpolatedConditional1D(
             x_bins={
@@ -303,9 +304,10 @@ def construct_conditionals_from_prob_logM_delta_redshift(
 ):
     """Factorize p(logM, delta | z) into p(logM | z) and p(delta | logM, z).
 
-    ``prob_logM_delta_z_nn`` has shape (logM, delta, z), with z on the coarse
-    redshift bins. The returned arrays follow the ``InterpolatedConditional1D``
-    layout ``(x, *y_sorted)``: (logM, z) and (delta, logM, z).
+    ``prob_logM_delta_z_nn`` has shape (logM, delta, z), with z on the
+    redshift_mass_evolving bins (plus the constant bin). The returned arrays
+    follow the ``InterpolatedConditional1D`` layout ``(x, *y_sorted)``:
+    (logM, z) and (delta, logM, z).
     """
 
     edges_dict = analysis.binning["boundaries"]

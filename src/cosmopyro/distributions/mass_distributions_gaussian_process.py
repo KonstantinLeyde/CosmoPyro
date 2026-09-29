@@ -354,13 +354,13 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     Redshift lives on the coarse ``redshift_mass_evolving`` bins (separate
     from the fine ``redshift`` grid, to keep the number of Fourier modes
     small). Above them the mass distribution is held constant, see
-    ``get_redshift_mass_edges_with_constant_bin``.
+    ``get_redshift_mass_evolving_edges_with_constant_bin``.
 
     The GRF grid covers [logM_min, logM_max] x [-delta_max, +delta_max] x
-    [2 z_mass_min - z_mass_max, z_mass_max] where delta = minus_log_mass_ratio.
-    The physical region is delta >= 0 (m1 >= m2) and z >= z_mass_min. The
-    symmetry phi(logM, delta, z) = phi(logM, -delta, z) is exact by
-    construction.
+    [2 z_min - z_max, z_max], where delta = minus_log_mass_ratio and [z_min,
+    z_max] is the redshift_mass_evolving range. The physical region is
+    delta >= 0 (m1 >= m2) and z >= z_min. The symmetry
+    phi(logM, delta, z) = phi(logM, -delta, z) is exact by construction.
 
     Returns prob_nn with shape (log_mass_total_s, minus_log_mass_ratio >= 0,
     redshift_mass_evolving), normalized over (logM, delta) separately in each
@@ -390,7 +390,7 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     mass_params = params[mass_params_key]
 
     # Window edges move with redshift, evaluated at the redshift_mass_evolving
-    # centers: shape (logM, delta, z_mass)
+    # centers: shape (logM, delta, redshift_mass_evolving)
     log_window_m1 = get_log_window_mass_s_redshift(
         analysis, params, bins_mass_s=m1_s_grid, mass_params_key=mass_params_key
     )
@@ -399,11 +399,12 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
     )
     log_window_logM_delta_z = log_window_m1 + log_window_m2
 
-    # Build the GRF on [logM] x [delta >= 0] x [z_mass]. Mirroring along delta
-    # enforces exchange symmetry, phi(logM, delta, z) = phi(logM, -delta, z);
-    # mirroring along redshift breaks the FFT periodicity that would otherwise
-    # tie z_mass_max to z_mass_min (at the cost of zero slope and ~2x variance
-    # at the z edges). As for logM, the redshift range is mapped to unit
+    # Build the GRF on [logM] x [delta >= 0] x [redshift_mass_evolving].
+    # Mirroring along delta enforces exchange symmetry,
+    # phi(logM, delta, z) = phi(logM, -delta, z); mirroring along redshift
+    # breaks the FFT periodicity that would otherwise tie the top of
+    # redshift_mass_evolving to its bottom (at the cost of zero slope and ~2x
+    # variance at the z edges). As for logM, the redshift range is mapped to unit
     # length; its correlation length relative to logM is set by
     # power_spectrum_relative_scale_log_mass_total_s_to_redshift.
     power_spectrum_of_k = get_power_spectrum_3D_from_analysis_kwargs(
@@ -421,8 +422,8 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
             "Marginal 1D GRF is not implemented for the 3D logMdelta model."
         )
 
-    # White noise has shape [N_logM, N_delta_half, N_z_mass] — the independent
-    # parameters; the field mirrors it along delta and redshift.
+    # White noise has shape [N_logM, N_delta_half, N_redshift_mass_evolving] —
+    # the independent parameters; the field mirrors it along delta and redshift.
     gaussian_F_whitened_half = mass_params["gaussian_F_whitened_spatial"]
     _check_white_noise_shape(
         gaussian_F_whitened_half,
