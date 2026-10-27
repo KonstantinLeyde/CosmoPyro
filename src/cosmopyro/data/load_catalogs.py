@@ -1,7 +1,9 @@
+import operator
 from types import SimpleNamespace
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from ..utils.jax_utils import (
     group_sizes_are_uniform,
@@ -14,6 +16,8 @@ from .data_utils import (
 
 __all__ = [
     "DEFAULT_INJECTION_KEYS",
+    "EVENT_SAMPLE_KEYS",
+    "CatalogWrapper",
     "add_healpix_idx_to_simple_namespace_or_randomly_draw",
     "add_in_fake_posterior_samples_dimension",
     "add_missing_variables_to_samples",
@@ -352,3 +356,129 @@ def add_missing_variables_to_samples(samples, cosmological_model=None):
         samples.chirp_mass_d = (samples.mass_1_d * samples.mass_2_d) ** (3 / 5) / (
             samples.mass_1_d + samples.mass_2_d
         ) ** (1 / 5)
+
+
+EVENT_SAMPLE_KEYS = [
+    "mass_1_d",
+    "mass_2_d",
+    "mass_ratio",
+    "luminosity_distance",
+    "ra",
+    "dec",
+    "healpix_idx",
+    "prior_masses_d_dL",
+    "redshift",
+    "mass_1_s",
+    "mass_2_s",
+    "chirp_mass_s",
+    "chirp_mass_d",
+    "log_mass_total_s",
+    "minus_log_mass_ratio",
+]
+
+
+def _check_flattened_catalog(catalog):
+    num_per_event = getattr(catalog, "num_posterior_samples_per_event", None)
+    if num_per_event is None:
+        raise ValueError(
+            "Catalog must be in flattened format with 'num_posterior_samples_per_event'. "
+            "Use flatten_samples_to_stacked to convert 2D samples."
+        )
+    if catalog.mass_1_d.ndim != 1:
+        raise ValueError(
+            f"Expected 1D flattened samples, got mass_1_d with shape {catalog.mass_1_d.shape}."
+        )
+    num_samples = int(np.sum(num_per_event))
+    if num_samples != catalog.mass_1_d.shape[0]:
+        raise ValueError(
+            f"sum(num_posterior_samples_per_event) = {num_samples} does not match "
+            f"the number of samples {catalog.mass_1_d.shape[0]}."
+        )
+
+
+class CatalogWrapper:
+    """Per-event access to a flattened posterior-sample catalog.
+
+    The input catalog is shallow-copied, so derived variables added here do not
+    modify the caller's namespace. Attribute reads and writes that are not
+    wrapper attributes are forwarded to the wrapped catalog.
+    """
+
+    _WRAPPER_ATTRS = ("catalog", "nside", "cosmological_model")
+
+    def __init__(self, catalog, nside=None, cosmological_model=None):
+        _check_flattened_catalog(catalog)
+
+        # Arrays are never modified in place, only new attributes are added,
+        # so a shallow copy is enough to leave the input catalog untouched.
+        catalog = SimpleNamespace(**vars(catalog))
+
+        self.catalog = catalog
+        self.nside = nside
+        self.cosmological_model = cosmological_model
+
+        add_missing_variables_to_samples(
+            catalog, cosmological_model=cosmological_model
+        )
+
+        if nside is not None:
+            if hasattr(catalog, "healpix_idx"):
+                raise ValueError(
+                    "Catalog already has 'healpix_idx'. Pass nside=None to use it, "
+                    "or remove it from the catalog to recompute at a new nside."
+                )
+            if not (hasattr(catalog, "ra") and hasattr(catalog, "dec")):
+                raise ValueError("Computing 'healpix_idx' requires 'ra' and 'dec'.")
+            catalog.healpix_idx = get_healpix_idx_from_simple_namespace(
+                catalog, nside=nside
+            )
+
+        if not hasattr(catalog, "event_names"):
+            catalog.event_names = [f"event_{i}" for i in range(self.num_events)]
+
+    def __getattr__(self, name):
+        # Guard against infinite recursion when 'catalog' is not set yet,
+        # e.g. during copy.deepcopy or unpickling.
+        if name in self._WRAPPER_ATTRS:
+            raise AttributeError(name)
+        return getattr(self.catalog, name)
+
+    def __setattr__(self, name, value):
+        if name in self._WRAPPER_ATTRS or hasattr(type(self), name):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self.catalog, name, value)
+
+    @property
+    def num_events(self):
+        return len(self.catalog.num_posterior_samples_per_event)
+
+    @property
+    def offsets(self):
+        """Start index of each event in the flattened arrays, followed by the total length."""
+        num_per_event = np.asarray(self.catalog.num_posterior_samples_per_event)
+        return np.concatenate([[0], np.cumsum(num_per_event)])
+
+    def get_event_indices(self, idx):
+        idx = operator.index(idx)
+        num_events = self.num_events
+        if not -num_events <= idx < num_events:
+            raise IndexError(
+                f"Event index {idx} out of range for catalog with {num_events} events."
+            )
+        idx %= num_events
+        offsets = self.offsets
+        return int(offsets[idx]), int(offsets[idx + 1])
+
+    def get_event_samples_from_name(self, name):
+        idx = self.catalog.event_names.index(name)
+        return self.get_event_samples(idx)
+
+    def get_event_samples(self, idx):
+        start_idx, end_idx = self.get_event_indices(idx)
+
+        samples = SimpleNamespace()
+        for key in EVENT_SAMPLE_KEYS:
+            if hasattr(self.catalog, key):
+                setattr(samples, key, getattr(self.catalog, key)[start_idx:end_idx])
+        return samples
