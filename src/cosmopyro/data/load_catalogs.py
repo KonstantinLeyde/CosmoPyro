@@ -326,9 +326,6 @@ def add_missing_variables_to_samples(samples, cosmological_model=None):
     if not hasattr(samples, "mass_2_d"):
         samples.mass_2_d = samples.mass_1_d * samples.mass_ratio
 
-    if not hasattr(samples, "log_mass_total_s"):
-        samples.log_mass_total_s = jnp.log(samples.mass_1_d + samples.mass_2_d)
-
     if not hasattr(samples, "minus_log_mass_ratio"):
         samples.minus_log_mass_ratio = -jnp.log(samples.mass_2_d / samples.mass_1_d)
 
@@ -342,6 +339,9 @@ def add_missing_variables_to_samples(samples, cosmological_model=None):
 
     if not hasattr(samples, "mass_2_s"):
         samples.mass_2_s = samples.mass_2_d / (1 + samples.redshift)
+
+    if not hasattr(samples, "log_mass_total_s"):
+        samples.log_mass_total_s = jnp.log(samples.mass_1_s + samples.mass_2_s)
 
     if not hasattr(samples, "chirp_mass_s"):
         samples.chirp_mass_s = (samples.mass_1_s * samples.mass_2_s) ** (3 / 5) / (
