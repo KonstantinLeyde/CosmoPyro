@@ -76,7 +76,7 @@ PARAMETER_LABELS = {
     "mass_1_d": r"$m_{1,{\rm d}}$" + M_unit,
     "mass_ratio": r"$q$",
     "luminosity_distance": r"$d_{\rm L}$ [Mpc]",
-    "chirp_mass_d": r"$\mathcal{M}_{\rm c, d}$" + M_unit,
+    "chirp_mass_d": r"$\mathcal{M}_{\rm d}$" + M_unit,
 }
 
 
