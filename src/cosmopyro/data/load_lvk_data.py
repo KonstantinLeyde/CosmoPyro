@@ -232,7 +232,7 @@ def load_all_events_from_event_dict(
     """
 
     # Parse the input type string (e.g. "BBH+NSBH" -> ['BBH', 'NSBH'])
-    valid_types = [t.strip() for t in input_type.split("+")]
+    valid_types = [t.strip() for t in input_type.split("+")] if input_type else None
 
     print(f"Loading events of type: {valid_types}...")
 
@@ -278,11 +278,20 @@ def get_distance_priors_from_event_dict(event_dict, catalog_df):
         overwritten = overwrite_if_event_in_exceptions(k)
         if overwritten is not None:
             prior_dict_events[k] = overwritten
-            print(prior_dict_events)
             continue
 
         if "priors" in catalog_df[k].keys():
-            priors = catalog_df[k]["priors"]["analytic"]
+            if "analytic" in catalog_df[k]["priors"].keys():
+                priors = catalog_df[k]["priors"]["analytic"]
+            else:
+                if event_dict[k]["observing_run"] in ["O4b", "O4c"]:
+                    # defining the distance prior for O4b/O4c events to be uniform in source frame
+                    # see zenodo data releases and associated documentation for details
+                    priors = {"luminosity_distance": "bilby.gw.prior.UniformSourceFrame(minimum="}
+                else:
+                    raise KeyError(
+                        f"Event {k} missing 'analytic' prior specification and not in O4b/O4c."
+                    )
         else:
             raise KeyError(f"Event {k} missing 'priors' specification.")
 
