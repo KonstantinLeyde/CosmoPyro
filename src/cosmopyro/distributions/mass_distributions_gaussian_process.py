@@ -415,6 +415,7 @@ def construct_prob_nn_whitened_field_3D_logMdelta(analysis, params):
         box_shape_d=[num_bins_logM, num_bins_delta, num_bins_redshift],
         power_spectrum_of_k=power_spectrum_of_k,
         axes_break_periodicity=[False, True, True],
+        axes_correct_larger_variance=[False, True, True],
     )
 
     if "gaussian_F_whitened_spatial_marginal" in mass_params:
