@@ -1,3 +1,4 @@
+import warnings
 from types import SimpleNamespace
 
 import jax.numpy as jnp
@@ -114,16 +115,12 @@ def validate_skymap(skymap, binning, nside, atol=1e-6):
 
 def check_skymap_values(skymap):
     """
-    Check that the sky map values are finite and strictly positive.
+    Check that the sky map values are finite and non-negative; warn about exact zeros.
 
-    Exact zeros are not allowed: the likelihood evaluates log(prob_skyposition_zhp)
-    for every posterior sample, and a sample in a cell (or between two adjacent
-    redshift bins) where the sky map is exactly zero gives log(0) = -inf. The
-    ``nonfinite_log_prob_policy: repair`` default replaces that value, but the
-    gradient stays NaN, so NUTS rejects every trajectory where any sample hits
-    such a cell. This silently biases the posterior (e.g. towards parameters
-    that move all samples out of the empty cells). Floor empty cells to a small
-    positive value before normalizing (as ``build_skymap`` does with ``eps``).
+    Non-finite or negative entries are errors. Exact zeros are allowed but reported
+    with a warning: the log-density there is floored at ``epsilon`` (gradient-safe,
+    see ``grid_distributions._safe_log_density``), i.e. such cells are treated as
+    (almost) impossible host locations, which is usually worth knowing.
 
     Parameters
     ----------
@@ -160,11 +157,11 @@ def check_skymap_values(skymap):
                 f" in {zero_bins.shape[0]} redshift bins, "
                 f"z in [{float(z_edges[zero_bins[0]]):.4f}, {float(z_edges[zero_bins[-1] + 1]):.4f}]"
             )
-        errors.append(
-            f"Sky map contains {n_zero} entries that are exactly zero{z_info}. "
-            "Posterior samples in such cells give log(0) = -inf and a NaN gradient, "
-            "which biases NUTS. Floor empty cells to a small positive value and "
-            "renormalize each redshift slice."
+        warnings.warn(
+            f"Sky map contains {n_zero} entries ({n_zero / prob.size:.1e} of all) that are exactly "
+            f"zero{z_info}. Posterior samples there get log(epsilon), i.e. these cells are "
+            "treated as (almost) impossible host locations.",
+            stacklevel=2,
         )
 
     return errors

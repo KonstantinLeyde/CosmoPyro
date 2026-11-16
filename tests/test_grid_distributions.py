@@ -325,3 +325,38 @@ def test_linear_density_interpolation_remains_available():
     log_prob = model.log_prob({"x": jnp.array(1.3)})
 
     assert jnp.isfinite(log_prob)
+
+
+def test_separable_zero_grid_cells_give_finite_value_and_gradient():
+    # consecutive empty sky-map cells: the density is exactly zero between their centers
+    x_edges = jnp.linspace(0.0, 1.0, 11)
+    y_edges = jnp.arange(-0.5, 2.5)
+    sky = jnp.full((10, 2), 0.5).at[1:4, 0].set(0.0)
+    model = SeparableConditional1D(
+        x_bins={"x": x_edges}, y_bins={"y": y_edges}, prob_x=jnp.ones(10), grid=sky
+    )
+    dl = jnp.array([0.15, 0.30, 0.55, 0.80])
+    pix = jnp.array([0.0, 0.0, 1.0, 1.0])
+
+    def log_likelihood(h):
+        lp = model.log_prob({"x": dl * h}, {"y": pix})
+        return jax.scipy.special.logsumexp(lp)
+
+    for h in [1.0, 1.6]:  # sample 2 (h=1.0) or sample 1 (h=1.6) sits in the empty cells
+        lp = model.log_prob({"x": dl * h}, {"y": pix})
+        assert jnp.all(jnp.isfinite(lp))
+        assert jnp.isfinite(jax.grad(log_likelihood)(h))
+
+
+def test_linear_density_zero_cells_give_finite_gradient():
+    edges = jnp.linspace(0.0, 4.0, 5)
+    cond = jnp.array([1.0, 0.0, 0.0, 1.0])
+    model = InterpolatedConditional1D(
+        x_bins={"x": edges}, y_bins=None, cond=cond, interpolation="linear_density"
+    )
+
+    def lp(x):
+        return model.log_prob({"x": x}) + model.log_mass({"x": x})
+
+    assert jnp.isfinite(lp(2.0))
+    assert jnp.isfinite(jax.grad(lp)(2.0))

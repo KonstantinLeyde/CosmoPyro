@@ -131,13 +131,12 @@ def _uniform_skymap(discretization):
     return SimpleNamespace(prob_skyposition_zhp=prob, z_edges=discretization.boundaries["r"], nside=discretization.nside)
 
 
-def test_check_skymap_values_flags_exact_zeros(discretization):
+def test_check_skymap_values_warns_on_exact_zeros(discretization):
     skymap = _uniform_skymap(discretization)
     skymap.prob_skyposition_zhp = skymap.prob_skyposition_zhp.at[1, 3].set(0.0).at[2, 5].set(0.0)
-    errors = check_skymap_values(skymap)
-    assert len(errors) == 1
-    assert "2 entries that are exactly zero" in errors[0]
-    assert "2 redshift bins" in errors[0]
+    with pytest.warns(UserWarning, match="2 entries"):
+        errors = check_skymap_values(skymap)
+    assert errors == []
 
 
 def test_check_skymap_values_flags_negative_and_nonfinite(discretization):
@@ -146,7 +145,6 @@ def test_check_skymap_values_flags_negative_and_nonfinite(discretization):
     errors = check_skymap_values(skymap)
     assert any("2 non-finite" in e for e in errors)
     assert any("1 negative" in e for e in errors)
-    assert not any("exactly zero" in e for e in errors)
 
 
 def test_check_skymap_values_tiny_floor_passes(discretization):

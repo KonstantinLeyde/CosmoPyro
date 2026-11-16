@@ -415,7 +415,7 @@ def run_data_checks(analysis, data_kwargs):
         except ValueError as e:
             errors.append(str(e))
 
-        # Finite, non-negative and no exact zeros (log(0) gives NaN gradients)
+        # Finite and non-negative (errors); exact zeros only give a warning
         errors += check_skymap_values(skymap)
 
         # Check that prob_skyposition_zhp sums to a constant across healpixels
