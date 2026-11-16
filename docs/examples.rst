@@ -1,7 +1,7 @@
 Examples
 ========
 
-Worked examples, from a first gradient evaluation through to loading and
+Examples include first gradient evaluation through to loading and
 plotting the output of a finished run.
 
 .. toctree::

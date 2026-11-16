@@ -7,7 +7,7 @@ jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import pytest
 
-from cosmopyro.data.build_skymap import build_skymap, validate_skymap
+from cosmopyro.data.build_skymap import build_skymap, check_skymap_values, validate_skymap
 from cosmopyro.utils.spherical_coordinates import HealPixDiscretization3D
 
 
@@ -117,3 +117,38 @@ def test_validate_skymap_misaligned_edges(discretization, galaxy_catalog):
     binning = {"boundaries": {"redshift": shifted_edges}}
     with pytest.raises(ValueError, match="don't match"):
         validate_skymap(skymap, binning, nside=discretization.nside)
+
+
+def test_check_skymap_values_build_skymap_passes(discretization, galaxy_catalog):
+    # build_skymap floors empty cells with eps, so it never produces exact zeros
+    skymap = build_skymap(galaxy_catalog, discretization)
+    assert jnp.all(skymap.prob_skyposition_zhp > 0)
+    assert check_skymap_values(skymap) == []
+
+
+def _uniform_skymap(discretization):
+    prob = jnp.full(discretization.shape, 1.0 / discretization.npix)
+    return SimpleNamespace(prob_skyposition_zhp=prob, z_edges=discretization.boundaries["r"], nside=discretization.nside)
+
+
+def test_check_skymap_values_warns_on_exact_zeros(discretization):
+    skymap = _uniform_skymap(discretization)
+    skymap.prob_skyposition_zhp = skymap.prob_skyposition_zhp.at[1, 3].set(0.0).at[2, 5].set(0.0)
+    with pytest.warns(UserWarning, match="2 entries"):
+        errors = check_skymap_values(skymap)
+    assert errors == []
+
+
+def test_check_skymap_values_flags_negative_and_nonfinite(discretization):
+    skymap = _uniform_skymap(discretization)
+    skymap.prob_skyposition_zhp = skymap.prob_skyposition_zhp.at[0, 0].set(-1e-3).at[1, 1].set(jnp.nan).at[2, 2].set(jnp.inf)
+    errors = check_skymap_values(skymap)
+    assert any("2 non-finite" in e for e in errors)
+    assert any("1 negative" in e for e in errors)
+
+
+def test_check_skymap_values_tiny_floor_passes(discretization):
+    # a tiny positive floor is fine: only exact zeros give log(0)
+    skymap = _uniform_skymap(discretization)
+    skymap.prob_skyposition_zhp = skymap.prob_skyposition_zhp.at[1, 3].set(1e-300)
+    assert check_skymap_values(skymap) == []

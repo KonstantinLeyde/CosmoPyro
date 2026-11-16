@@ -71,9 +71,17 @@ def _bin_index(edges, vals, spacing):
 
 
 def _safe_log_density(dens, oob, epsilon):
-    """Log-density with gradient-safe OOB handling."""
-    dens_clean = jnp.where(oob, jnp.zeros_like(dens), dens)
-    dens_safe = jnp.where(oob, jnp.asarray(epsilon, dtype=dens.dtype), dens_clean)
+    """Log-density that is gradient-safe for out-of-bounds points and zero densities.
+
+    Out-of-bounds points and in-bounds zeros (e.g. empty sky-map cells) get
+    log(epsilon). The replacement happens *before* the log, so the gradient
+    through such points is exactly zero. Replacing log(0) = -inf afterwards
+    (e.g. with jnp.where) fixes the value but not the gradient: the backward
+    pass computes 0 * inf = NaN, and NUTS then rejects every trajectory where
+    any posterior sample sits in a zero cell, which biases the posterior.
+    """
+    bad = oob | (dens <= 0)  # NaN densities stay NaN (comparison is False)
+    dens_safe = jnp.where(bad, jnp.asarray(epsilon, dtype=dens.dtype), dens)
     return jnp.log(dens_safe)
 
 
@@ -311,8 +319,7 @@ class InterpolatedConditional1D:
         if bshape:
             width_vals = jnp.broadcast_to(width_vals, bshape)
         mass = dens * width_vals
-        mass_safe = jnp.where(oob, self.epsilon, mass)
-        return jnp.log(mass_safe)
+        return _safe_log_density(mass, oob, self.epsilon)
 
 
 class SeparableConditional1D:

@@ -408,13 +408,16 @@ def run_data_checks(analysis, data_kwargs):
     if skymap is not None:
         import jax.numpy as jnp
 
-        from ..data.build_skymap import validate_skymap
+        from ..data.build_skymap import check_skymap_values, validate_skymap
 
         nside = analysis.nside
         try:
             validate_skymap(skymap, analysis.binning, nside)
         except ValueError as e:
             errors.append(str(e))
+
+        # Finite and non-negative (errors); exact zeros only give a warning
+        errors += check_skymap_values(skymap)
 
         # Check that prob_skyposition_zhp sums to a constant across healpixels
         row_sums = jnp.sum(skymap.prob_skyposition_zhp, axis=-1)

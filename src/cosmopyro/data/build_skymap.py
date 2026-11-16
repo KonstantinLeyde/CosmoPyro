@@ -1,3 +1,4 @@
+import warnings
 from types import SimpleNamespace
 
 import jax.numpy as jnp
@@ -6,6 +7,7 @@ from .data_utils import save_namespace_to_hdf5
 
 __all__ = [
     "build_skymap",
+    "check_skymap_values",
     "validate_skymap",
 ]
 
@@ -109,3 +111,57 @@ def validate_skymap(skymap, binning, nside, atol=1e-6):
             f"Sky map redshift edges don't match analysis edges. "
             f"Max deviation: {max_dev:.2e} (tolerance: {atol:.2e})."
         )
+
+
+def check_skymap_values(skymap):
+    """
+    Check that the sky map values are finite and non-negative; warn about exact zeros.
+
+    Non-finite or negative entries are errors. Exact zeros are allowed but reported
+    with a warning: the log-density there is floored at ``epsilon`` (gradient-safe,
+    see ``grid_distributions._safe_log_density``), i.e. such cells are treated as
+    (almost) impossible host locations, which is usually worth knowing.
+
+    Parameters
+    ----------
+    skymap : SimpleNamespace
+        Must have .prob_skyposition_zhp.
+
+    Returns
+    -------
+    list of str
+        Error messages; empty if the sky map passes.
+    """
+    prob = jnp.asarray(skymap.prob_skyposition_zhp)
+    errors = []
+
+    n_nonfinite = int(jnp.sum(~jnp.isfinite(prob)))
+    if n_nonfinite > 0:
+        errors.append(f"Sky map contains {n_nonfinite} non-finite (NaN/inf) entries.")
+
+    finite = jnp.where(jnp.isfinite(prob), prob, 1.0)
+    n_negative = int(jnp.sum(finite < 0))
+    if n_negative > 0:
+        errors.append(
+            f"Sky map contains {n_negative} negative entries (min {float(jnp.min(finite)):.3e})."
+        )
+
+    is_zero = finite == 0
+    n_zero = int(jnp.sum(is_zero))
+    if n_zero > 0:
+        zero_bins = jnp.nonzero(jnp.any(is_zero, axis=-1))[0]
+        z_info = ""
+        if hasattr(skymap, "z_edges"):
+            z_edges = jnp.asarray(skymap.z_edges)
+            z_info = (
+                f" in {zero_bins.shape[0]} redshift bins, "
+                f"z in [{float(z_edges[zero_bins[0]]):.4f}, {float(z_edges[zero_bins[-1] + 1]):.4f}]"
+            )
+        warnings.warn(
+            f"Sky map contains {n_zero} entries ({n_zero / prob.size:.1e} of all) that are exactly "
+            f"zero{z_info}. Posterior samples there get log(epsilon), i.e. these cells are "
+            "treated as (almost) impossible host locations.",
+            stacklevel=2,
+        )
+
+    return errors
