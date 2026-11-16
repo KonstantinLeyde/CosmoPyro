@@ -22,7 +22,7 @@ class MockCosmology:
         return luminosity_distance_gw / 1000.0
 
     def get_dluminosity_distance_gw_over_dz_from_redshift(
-        self, redshift, params_modified_gravity=None
+        self, redshift, params_modified_gravity=None, luminosity_distance_gw=None
     ):
         return jnp.ones_like(redshift) * 100.0
 
@@ -175,7 +175,9 @@ class TestBatching(unittest.TestCase):
             def get_redshift_from_luminosity_distance_gw(self, luminosity_distance_gw):
                 return luminosity_distance_gw / (1000.0 * self.h)
 
-            def get_dluminosity_distance_gw_over_dz_from_redshift(self, redshift):
+            def get_dluminosity_distance_gw_over_dz_from_redshift(
+                self, redshift, luminosity_distance_gw=None
+            ):
                 return 1000.0 * self.h * jnp.ones_like(redshift)
 
         def make_loss(batch_size):
@@ -204,6 +206,24 @@ class TestBatching(unittest.TestCase):
             jnp.allclose(grad_unbatched, grad_batched, rtol=1e-12),
             f"Batched gradient mismatch: {grad_unbatched} vs {grad_batched}",
         )
+
+    def test_checkpoint_only_when_split(self):
+        """jax.checkpoint is applied only if the data is split into several pieces."""
+        from cosmopyro.numpyro_utils.batching import apply_batched_operation_1d
+
+        x = jnp.linspace(0.1, 1.0, 1000)
+
+        def has_checkpoint(batch_size):
+            def loss(a):
+                out = apply_batched_operation_1d(x, lambda b: jnp.log(a * b), batch_size)
+                return jnp.sum(out)
+
+            return "remat" in str(jax.make_jaxpr(loss)(2.0))  # jax.checkpoint primitive
+
+        self.assertFalse(has_checkpoint(10**6))  # num_batches == 0: single call
+        self.assertFalse(has_checkpoint(1000))  # one full batch, no remainder
+        self.assertTrue(has_checkpoint(600))  # one batch + remainder
+        self.assertTrue(has_checkpoint(100))  # ten batches
 
 
 if __name__ == "__main__":
