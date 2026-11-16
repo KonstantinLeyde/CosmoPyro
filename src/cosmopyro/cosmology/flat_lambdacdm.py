@@ -166,8 +166,17 @@ class FlatLambdaCDM(eqx.Module):
     def get_dcomoving_distance_over_dz_from_redshift(self, z):
         return self.c_over_E(z=z) / self.H0
 
-    def get_dluminosity_distance_over_dz_from_redshift(self, z):
-        comoving_distance = self.get_comoving_distance_from_redshift(z=z)
+    def get_dluminosity_distance_over_dz_from_redshift(self, z, luminosity_distance=None):
+        """dD_L/dz = D_C(z) + (1 + z) dD_C/dz.
+
+        If D_L(z) is already known (e.g. z was obtained by inverting D_L), pass it as
+        ``luminosity_distance`` to skip the D_C(z) table lookup: in flat LambdaCDM
+        D_C = D_L / (1 + z). This is also exactly consistent with the inversion.
+        """
+        if luminosity_distance is None:
+            comoving_distance = self.get_comoving_distance_from_redshift(z=z)
+        else:
+            comoving_distance = luminosity_distance / (1 + z)
         term_1 = comoving_distance
         term_2 = (1 + z) * self.get_dcomoving_distance_over_dz_from_redshift(z=z)
         return term_1 + term_2
@@ -199,6 +208,10 @@ class FlatLambdaCDM(eqx.Module):
         )
 
     def get_dluminosity_distance_gw_over_dz_from_redshift(
-        self, redshift, params_modified_gravity=None
+        self, redshift, params_modified_gravity=None, luminosity_distance_gw=None
     ):
-        return self.get_dluminosity_distance_over_dz_from_redshift(z=redshift)
+        """dD_L^GW/dz; D_L^GW = D_L in GR. Pass ``luminosity_distance_gw`` = D_L^GW(z)
+        if known to skip a table lookup (see get_dluminosity_distance_over_dz_from_redshift)."""
+        return self.get_dluminosity_distance_over_dz_from_redshift(
+            z=redshift, luminosity_distance=luminosity_distance_gw
+        )

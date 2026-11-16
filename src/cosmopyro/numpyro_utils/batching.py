@@ -32,17 +32,21 @@ def apply_batched_operation_1d(
             Without this, reverse-mode AD stores the intermediates of every
             batch and peak memory grows with N_total despite the batching;
             with it, peak memory scales with batch_size at the cost of one
-            extra forward pass per batch.
+            extra forward pass per batch. Only applied when the data is split
+            into more than one piece: for a single piece the intermediates are
+            needed for the backward pass anyway, so checkpointing saves no
+            memory and only adds a second forward pass (~1.5x slower).
     """
-    if checkpoint_gradients:
-        operation_fn = jax.checkpoint(operation_fn)
-
     # Identify total size from the first leaf
     leaves = jax.tree_util.tree_leaves(data_1d)
     total_elements = leaves[0].shape[0]
 
     num_batches = total_elements // batch_size
     cutoff = num_batches * batch_size
+    num_pieces = num_batches + int(total_elements > cutoff)
+
+    if checkpoint_gradients and num_pieces > 1:
+        operation_fn = jax.checkpoint(operation_fn)
 
     if num_batches == 0:
         return operation_fn(data_1d)

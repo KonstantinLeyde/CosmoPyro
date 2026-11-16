@@ -133,6 +133,17 @@ class TestJacobiansJAX:
             "d(luminosity distance)/dz (model) does not match JAX gradient"
         )
 
+    def test_dluminosity_dz_from_known_luminosity_distance(self):
+        """Passing D_L(z) skips the D_C table lookup but gives the same dD_L/dz."""
+        cosmo = cosmopyro_cosmology.FlatLambdaCDM(params=PARAMS, numerics=NUMERICS)
+        dL = jnp.geomspace(1.0, 2.0e4, 10_000)  # Mpc, z up to ~2.2
+        z = cosmo.get_redshift_from_luminosity_distance_gw(luminosity_distance_gw=dL)
+        with_table = cosmo.get_dluminosity_distance_gw_over_dz_from_redshift(z)
+        from_dL = cosmo.get_dluminosity_distance_gw_over_dz_from_redshift(
+            z, luminosity_distance_gw=dL
+        )
+        assert jnp.allclose(from_dL, with_table, rtol=1e-8, atol=0.0)
+
     def test_gradient_through_H0(self):
         """Verify JAX can differentiate luminosity distance w.r.t. H0."""
 

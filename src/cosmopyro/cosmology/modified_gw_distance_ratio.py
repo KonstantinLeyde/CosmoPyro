@@ -109,8 +109,9 @@ class ModifiedGWDistanceFlatLambdaCDM(FlatLambdaCDM):
         )
 
     def get_dluminosity_distance_gw_over_dz_from_redshift(
-        self, redshift, params_modified_gravity=None
+        self, redshift, params_modified_gravity=None, luminosity_distance_gw=None
     ):
+        # luminosity_distance_gw is accepted for interface compatibility; not used here.
         ratio = self.get_ratio_from_redshift(redshift)
         term1 = ratio * self.get_dluminosity_distance_over_dz_from_redshift(redshift)
         term2 = self.ratio_fun_jacobian(
@@ -331,8 +332,9 @@ class ModifiedGWLuminosityDistanceCosmology(FlatLambdaCDM):
         )
 
     def get_dluminosity_distance_gw_over_dz_from_redshift(
-        self, redshift, params_modified_gravity=None
+        self, redshift, params_modified_gravity=None, luminosity_distance_gw=None
     ):
+        # luminosity_distance_gw is accepted for interface compatibility; not used here.
         return self.distance_fun_jacobian(redshift, self.params_modified_gravity)
 
     def get_ratio_from_redshift(self, redshift):

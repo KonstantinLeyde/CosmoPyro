@@ -312,7 +312,10 @@ def get_log_prob(samples, cosmological_model, distributions, params):
     log_prob = jnp.sum(log_prob_parts, axis=-dim_log - 1)
 
     log_jacobian = log_jacobian_md1md2dL_to_msmass_ratioz(
-        cosmological_model, redshift, samples.mass_1_d
+        cosmological_model,
+        redshift,
+        samples.mass_1_d,
+        luminosity_distance_gw=samples.luminosity_distance,
     )
     if uses_s_delta:
         # Additional Jacobian for (m1_s, q) -> (log_mass_total_s, minus_log_mass_ratio)
@@ -375,7 +378,9 @@ def calculate_safe_log_prob_batched(
     return jnp.reshape(flat_result, original_shape)
 
 
-def log_jacobian_md1md2dL_to_msmass_ratioz(cosmological_model, redshift, mass_1_d):
+def log_jacobian_md1md2dL_to_msmass_ratioz(
+    cosmological_model, redshift, mass_1_d, luminosity_distance_gw=None
+):
     r"""
     Log Jacobian for transformation from (mass_1_d, mass_2_d, luminosity_distance) to (mass_1_s, mass_ratio, redshift):
 
@@ -385,6 +390,8 @@ def log_jacobian_md1md2dL_to_msmass_ratioz(cosmological_model, redshift, mass_1_
         cosmological_model: Cosmological model to compute dL/dz
         redshift: Redshift array
         mass_1_d: Detector-frame mass 1 array (used to compute mass_1_s = mass_1_d / (1+z))
+        luminosity_distance_gw: optional GW luminosity distance at ``redshift`` (the value
+            ``redshift`` was inverted from); lets the cosmology skip a table lookup for dL/dz
 
     Returns:
         log_jacobian: Logarithm of the Jacobian determinant for the transformation
@@ -394,7 +401,7 @@ def log_jacobian_md1md2dL_to_msmass_ratioz(cosmological_model, redshift, mass_1_
     term_1 = 1 + redshift
     term_2 = mass_1_d
     term_3 = cosmological_model.get_dluminosity_distance_gw_over_dz_from_redshift(
-        redshift
+        redshift, luminosity_distance_gw=luminosity_distance_gw
     )
 
     return jnp.log(term_1) + jnp.log(term_2) + jnp.log(term_3)
