@@ -65,9 +65,14 @@ Configurations and results written before the turn-on was part of the name (e.g.
       \qquad m' = m - m_\mathrm{min}.
 
    The exact LVK turn-on is zero below :math:`m_\mathrm{min}`. Here it is floored at
-   :math:`S_\mathrm{floor}` = ``LVK_SMOOTHING_FLOOR`` = :math:`10^{-30}`, so that the grid
-   log-densities and their gradients stay finite; the floor is negligible against the rest of
-   the model. :math:`S(m_\mathrm{min} + \delta_m / 2) = 1/2`.
+   :math:`S_\mathrm{floor}` = ``LVK_SMOOTHING_FLOOR`` = :math:`10^{-4}`, so that the grid
+   log-densities and their gradients stay finite. The floor is deliberately not tiny: just above
+   :math:`m_\mathrm{min}` the exact :math:`\log S` drops like :math:`-\delta_m / m'`, which the
+   interpolation of log-densities on the mass grid cannot follow, and a tiny floor makes the
+   likelihood jagged in :math:`m_\mathrm{min}` (bad for HMC). With :math:`10^{-4}` it is about as
+   smooth as with the Gaussian turn-on for :math:`\delta_m \gtrsim 1`; it is still rougher for
+   very small :math:`\delta_m`, so a lower prior bound on :math:`\delta_m` of a few tenths is
+   advisable. :math:`S(m_\mathrm{min} + \delta_m / 2) = 1/2`.
 
 ``gaussian``
    A Gaussian fall-off below a threshold, calibrated to roughly follow the LVK turn-on:

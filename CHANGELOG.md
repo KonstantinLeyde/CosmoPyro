@@ -14,8 +14,10 @@ Development before 0.0.0 is not summarised here.
   finite and non-negative (errors); exact zeros give a warning.
 - LVK low-mass turn-on (Talbot & Thrane 2018) for the parametric mass models,
   `log_smoothing_low_mass_lvk`, selected with the `_smoothing_lvk` model names (see Changed).
-  S is floored at `LVK_SMOOTHING_FLOOR` = 1e-30 instead of being zero below `mmin`, so grid
-  log-densities and gradients stay finite.
+  S is floored at `LVK_SMOOTHING_FLOOR` = 1e-4 instead of being zero below `mmin`, so grid
+  log-densities and gradients stay finite. (A floor of 1e-30 made the likelihood jagged in
+  `mmin` for any mass-grid spacing, as the grid interpolation of log-densities cannot follow
+  the cliff of log S just above `mmin`.)
 
 ### Changed
 
