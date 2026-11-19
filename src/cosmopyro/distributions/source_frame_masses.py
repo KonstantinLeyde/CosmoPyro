@@ -1,3 +1,5 @@
+import warnings
+
 import jax.numpy as jnp
 
 from .grid_distributions import (
@@ -5,6 +7,7 @@ from .grid_distributions import (
     normalize_cond_interpolated_1d,
 )
 from .mass_distribution_parametrized import (
+    LOW_MASS_SMOOTHINGS,
     construct_prob_nn_multipeak_1D,
     construct_prob_nn_power_law_peak_1D,
     construct_prob_nn_truncated_gaussian_mass_ratio,
@@ -18,12 +21,70 @@ from .mass_distributions_gaussian_process import (
 )
 
 __all__ = [
+    "LEGACY_DISTRIBUTION_NAMES",
+    "MASS_1_S_SMOOTHED_MODELS",
+    "MASS_RATIO_SMOOTHED_MODELS",
     "construct_conditionals_from_prob_logM_delta",
     "construct_conditionals_from_prob_mass_1_s_mass_ratio",
     "construct_mass_1_s_prob_nn",
     "construct_mass_ratio_prob_nn",
     "construct_source_frame_mass_model",
+    "rename_legacy_distribution_names",
+    "split_smoothing",
 ]
+
+# Parametric models with a low-mass turn-on. Their distribution name states the turn-on
+# explicitly: "<base>_smoothing_<smoothing>", with <smoothing> a key of LOW_MASS_SMOOTHINGS,
+# e.g. "power_law_peak2_partial_windowed_smoothing_lvk".
+MASS_1_S_SMOOTHED_MODELS = [
+    "power_law_peak",
+    "power_law_peak2",
+    "power_law_peak2_partial_windowed",
+]
+MASS_RATIO_SMOOTHED_MODELS = [
+    "mass_ratio_running_power_law_in_log",
+    "mass_ratio_truncated_gaussian",
+]
+
+# Names used before the turn-on was part of the name; they all used the Gaussian turn-on.
+# Only for reading old results / configs, see rename_legacy_distribution_names.
+LEGACY_DISTRIBUTION_NAMES = {
+    base: f"{base}_smoothing_gaussian"
+    for base in MASS_1_S_SMOOTHED_MODELS + MASS_RATIO_SMOOTHED_MODELS
+}
+
+
+def split_smoothing(name):
+    """Split "<base>_smoothing_<smoothing>" into (base, smoothing); (name, None) if no turn-on."""
+    base, sep, smoothing = name.rpartition("_smoothing_")
+    if sep and smoothing in LOW_MASS_SMOOTHINGS:
+        return base, smoothing
+    return name, None
+
+
+def rename_legacy_distribution_names(kwargs_analysis):
+    """Replace legacy mass model names in ``kwargs_analysis["distribution_names"]`` (in place).
+
+    E.g. "power_law_peak2_partial_windowed" -> "power_law_peak2_partial_windowed_smoothing_gaussian".
+    Lets old results (whose kwargs_analysis.yaml has the old names) be loaded.
+    """
+    names = (kwargs_analysis or {}).get("distribution_names") or {}
+    for key, name in names.items():
+        if name in LEGACY_DISTRIBUTION_NAMES:
+            names[key] = LEGACY_DISTRIBUTION_NAMES[name]
+            warnings.warn(
+                f"Legacy distribution name {key}: {name} read as {names[key]}.",
+                stacklevel=2,
+            )
+    return kwargs_analysis
+
+
+def _parametric_smoothing(name, bases):
+    """(base, smoothing) of a parametric model with an explicit turn-on, else (None, None)."""
+    base, smoothing = split_smoothing(name)
+    if base in bases and smoothing is not None:
+        return base, smoothing
+    return None, None
 
 
 def _safe_conditional_from_joint(joint_prob, marginal_prob, x_widths):
@@ -60,15 +121,24 @@ def construct_source_frame_mass_model(analysis, params, interpolation="smooth_lo
     mass_1_s_name = analysis.get_distribution_name("mass_1_s")
     mass_ratio_name = analysis.get_distribution_name("mass_ratio")
 
-    if mass_1_s_name in [
-        "power_law_peak",
-        "power_law_peak2",
-        "power_law_peak2_partial_windowed",
-        "fourier_gp_1D",
-    ] and mass_ratio_name in [
-        "mass_ratio_running_power_law_in_log",
-        "mass_ratio_truncated_gaussian",
-    ]:
+    mass_1_s_base, mass_1_s_smoothing = _parametric_smoothing(
+        mass_1_s_name, MASS_1_S_SMOOTHED_MODELS
+    )
+    mass_ratio_base, mass_ratio_smoothing = _parametric_smoothing(
+        mass_ratio_name, MASS_RATIO_SMOOTHED_MODELS
+    )
+
+    # The turn-ons in mass_1_s and mass_2_s must be the same kind
+    if mass_1_s_smoothing is not None and mass_ratio_smoothing is not None:
+        if mass_1_s_smoothing != mass_ratio_smoothing:
+            raise ValueError(
+                f"Low-mass smoothing differs between mass_1_s={mass_1_s_name} and "
+                f"mass_ratio={mass_ratio_name}; use the same _smoothing_<...> suffix for both."
+            )
+
+    if (
+        mass_1_s_base is not None or mass_1_s_name == "fourier_gp_1D"
+    ) and mass_ratio_base is not None:
         cond = construct_mass_1_s_prob_nn(analysis, params)
         prob_m1s = normalize_cond_interpolated_1d(
             x_edges=analysis.binning["boundaries"]["mass_1_s"],
@@ -172,13 +242,18 @@ def _construct_joint_mass_model(
 def construct_mass_1_s_prob_nn(analysis, params):
 
     mass_1_s_name = analysis.get_distribution_name("mass_1_s")
+    base, smoothing = _parametric_smoothing(mass_1_s_name, MASS_1_S_SMOOTHED_MODELS)
 
-    if mass_1_s_name == "power_law_peak":
-        cond = construct_prob_nn_power_law_peak_1D(analysis, params)
-    elif mass_1_s_name == "power_law_peak2":
-        cond = construct_prob_nn_multipeak_1D(analysis, params)
-    elif mass_1_s_name == "power_law_peak2_partial_windowed":
-        cond = construct_prob_nn_multipeak_1D(analysis, params, partial_window=True)
+    if base == "power_law_peak":
+        cond = construct_prob_nn_power_law_peak_1D(
+            analysis, params, smoothing=smoothing
+        )
+    elif base == "power_law_peak2":
+        cond = construct_prob_nn_multipeak_1D(analysis, params, smoothing=smoothing)
+    elif base == "power_law_peak2_partial_windowed":
+        cond = construct_prob_nn_multipeak_1D(
+            analysis, params, smoothing=smoothing, partial_window=True
+        )
     elif mass_1_s_name == "fourier_gp_1D":
         log_window = get_log_window_mass_s(analysis, params)
         log_prob = construct_log_prob_nn_whitened_field_1D(analysis, params, log_window)
@@ -192,19 +267,18 @@ def construct_mass_1_s_prob_nn(analysis, params):
 def construct_mass_ratio_prob_nn(analysis, params):
 
     mass_ratio_name = analysis.get_distribution_name("mass_ratio")
+    base, smoothing = _parametric_smoothing(mass_ratio_name, MASS_RATIO_SMOOTHED_MODELS)
 
-    if mass_ratio_name == "mass_ratio_running_power_law_in_log":
+    if base == "mass_ratio_running_power_law_in_log":
         prob_mass_ratio = construct_running_power_law_prob_mass_ratio_nn(
-            analysis, params
+            analysis, params, smoothing=smoothing
         )
-    elif mass_ratio_name == "mass_ratio_truncated_gaussian":
+    elif base == "mass_ratio_truncated_gaussian":
         prob_mass_ratio = construct_prob_nn_truncated_gaussian_mass_ratio(
-            analysis, params
+            analysis, params, smoothing=smoothing
         )
     else:
-        raise NotImplementedError(
-            "Only mass ratio running power law is implemented so far."
-        )
+        raise NotImplementedError(f"Mass ratio model {mass_ratio_name} not implemented.")
 
     return prob_mass_ratio
 

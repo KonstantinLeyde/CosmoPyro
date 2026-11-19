@@ -7,6 +7,8 @@ from .grid_distributions import (
 )
 
 __all__ = [
+    "LOW_MASS_SMOOTHINGS",
+    "LVK_SMOOTHING_FLOOR",
     "SMOOTHING_SCALE",
     "complete_mass_bins_for_mass_ratio_models",
     "construct_prob_nn_multipeak_1D",
@@ -17,7 +19,9 @@ __all__ = [
     "get_log_window_mass_s",
     "get_mass_delta_m2",
     "get_mass_min",
-    "log_lvk_smoothing_low_mass_approximation",
+    "log_low_mass_smoothing",
+    "log_smoothing_low_mass_gaussian",
+    "log_smoothing_low_mass_lvk",
 ]
 
 SMOOTHING_SCALE = 0.007
@@ -25,7 +29,7 @@ SMOOTHING_SCALE = 0.007
 ## P(mass_1_s) models
 
 
-def construct_prob_nn_power_law_peak_1D(analysis, params):
+def construct_prob_nn_power_law_peak_1D(analysis, params, *, smoothing):
     """
     Power-law + Gaussian peak model for P(mass_1_s).
 
@@ -35,6 +39,8 @@ def construct_prob_nn_power_law_peak_1D(analysis, params):
         The analysis object containing binning information.
     params : dict
         Dictionary containing the parameters for the mass distribution model.
+    smoothing : str
+        Low-mass turn-on, a key of ``LOW_MASS_SMOOTHINGS`` ("gaussian" or "lvk").
 
     Returns
     -------
@@ -70,20 +76,23 @@ def construct_prob_nn_power_law_peak_1D(analysis, params):
 
     log_val = (
         log_mixture
-        + log_lvk_smoothing_low_mass_approximation(m1, mmin, delta_m)
+        + log_low_mass_smoothing(smoothing, m1, mmin, delta_m)
         + log_window
     )
 
     return jnp.exp(log_val)
 
 
-def construct_prob_nn_multipeak_1D(analysis, params, partial_window=False):
+def construct_prob_nn_multipeak_1D(analysis, params, *, smoothing, partial_window=False):
     """
     Power-law + two Gaussian peaks model for P(mass_1_s), with optional partial windowing.
     If partial_window is True, solely the power-law component is windowed, while the Gaussian peaks are not.
     This corresponds to the icarogw implementation.
 
     If partial_window is False, the entire mixture is windowed, which corresponds to the gwpopulation implementation.
+
+    The low-mass turn-on ``smoothing`` (a key of ``LOW_MASS_SMOOTHINGS``, "gaussian" or "lvk")
+    is applied to the entire mixture in both cases.
 
     Returns
     -------
@@ -124,9 +133,7 @@ def construct_prob_nn_multipeak_1D(analysis, params, partial_window=False):
     if partial_window:
         log_pl_windowed = log_w_pl + log_P + log_window
         log_mixture = jnp.logaddexp(log_pl_windowed, log_prob_peaks)
-        log_val = log_mixture + log_lvk_smoothing_low_mass_approximation(
-            m1, mmin, delta_m
-        )
+        log_val = log_mixture + log_low_mass_smoothing(smoothing, m1, mmin, delta_m)
     else:
         log_mixture = jnp.logaddexp(
             log_prob_peaks,
@@ -134,7 +141,7 @@ def construct_prob_nn_multipeak_1D(analysis, params, partial_window=False):
         )
         log_val = (
             log_mixture
-            + log_lvk_smoothing_low_mass_approximation(m1, mmin, delta_m)
+            + log_low_mass_smoothing(smoothing, m1, mmin, delta_m)
             + log_window
         )
 
@@ -236,6 +243,8 @@ def complete_mass_bins_for_mass_ratio_models(
 def construct_running_power_law_prob_mass_ratio_nn(
     analysis,
     params,
+    *,
+    smoothing,
     centers_mass_1_s=None,
     centers_mass_ratio=None,
     centers_mass_2_s=None,
@@ -250,6 +259,8 @@ def construct_running_power_law_prob_mass_ratio_nn(
         The analysis object containing binning information.
     params : dict
         Dictionary containing the parameters for the mass distribution model.
+    smoothing : str
+        Low-mass turn-on in mass_2_s, a key of ``LOW_MASS_SMOOTHINGS`` ("gaussian" or "lvk").
     centers_mass_1_s : array-like, optional
         The centers of the mass_1_s bins. If None, use the default binning from analysis.binning.
     centers_mass_ratio : array-like, optional
@@ -276,8 +287,8 @@ def construct_running_power_law_prob_mass_ratio_nn(
     mass_min = get_mass_min(params)
     sigma_mass_cutoff_mass_2 = get_mass_delta_m2(params)
 
-    log_smooth_cutoff = log_lvk_smoothing_low_mass_approximation(
-        m2s, mass_min, sigma_mass_cutoff_mass_2
+    log_smooth_cutoff = log_low_mass_smoothing(
+        smoothing, m2s, mass_min, sigma_mass_cutoff_mass_2
     )
 
     ms_ref = params["mass_ratio"]["mass_ratio_running_zero_point"]
@@ -298,13 +309,15 @@ def construct_running_power_law_prob_mass_ratio_nn(
 def construct_prob_nn_truncated_gaussian_mass_ratio(
     analysis,
     params,
+    *,
+    smoothing,
     centers_mass_1_s=None,
     centers_mass_ratio=None,
     centers_mass_2_s=None,
 ):
     """
     Construct the non-normalized probability distribution for the mass ratio, P(mass_ratio | mass_1_s), using a truncated Gaussian model.
-    The Gaussian is truncated at q=0 and q=1, and is smoothed at the low-mass end using the LVK smoothing function.
+    The Gaussian is truncated at q=0 and q=1, and is smoothed at the low-mass end in mass_2_s.
 
     Parameters
     ----------
@@ -312,6 +325,8 @@ def construct_prob_nn_truncated_gaussian_mass_ratio(
         The analysis object containing binning information.
     params : dict
         Dictionary containing the parameters for the mass distribution model.
+    smoothing : str
+        Low-mass turn-on in mass_2_s, a key of ``LOW_MASS_SMOOTHINGS`` ("gaussian" or "lvk").
     centers_mass_1_s : array-like, optional
         The centers of the mass_1_s bins. If None, use the default binning from analysis.binning.
     centers_mass_ratio : array-like, optional
@@ -338,8 +353,8 @@ def construct_prob_nn_truncated_gaussian_mass_ratio(
     mass_min = get_mass_min(params)
     sigma_mass_cutoff_mass_2 = get_mass_delta_m2(params)
 
-    log_smooth_cutoff = log_lvk_smoothing_low_mass_approximation(
-        m2s, mass_min, sigma_mass_cutoff_mass_2
+    log_smooth_cutoff = log_low_mass_smoothing(
+        smoothing, m2s, mass_min, sigma_mass_cutoff_mass_2
     )
 
     prob_nn_mass_ratio = jnp.exp(-0.5 * ((q - mu) / sigma) ** 2) / (
@@ -374,18 +389,22 @@ def _log_prob_G(x, mu, sigma):
 # End of modified from Chimera
 
 
-def log_lvk_smoothing_low_mass_approximation(
+def log_smoothing_low_mass_gaussian(
     ms: jnp.ndarray,
     mmin: float,
     delta_m: float,
 ) -> jnp.ndarray:
     r"""
-    Approximation to the LVK low-mass smoothing function, which is a smooth transition from 0 to 1 over a
-    mass range of delta_m starting at mmin.
+    Gaussian low-mass turn-on: a Gaussian fall-off below a threshold and S ~ 1 above it,
 
-    The approximation roughly follows the LVK smoothing function, and we interpolate between the two points:
-        S(m = \mmin) = 0
-        S(m = \mmin + \delta_m) = 1
+    .. math::
+
+        \log S(m) = -c\, \mathrm{softplus}(t)^2, \qquad
+        t = \frac{m_\mathrm{min} + \delta_m + a - m}{b\, \delta_m}.
+
+    It is never exactly zero, also below mmin. The constants a, b, c are tuned so that it
+    roughly follows the LVK turn-on (``log_smoothing_low_mass_lvk``), i.e. S ~ 0 at
+    m = mmin and S ~ 1 at m = mmin + delta_m.
 
     Parameters
     ----------
@@ -415,6 +434,74 @@ def log_lvk_smoothing_low_mass_approximation(
 
     # Quadratic decay in log-space: log(p) = -0.5 * t_smooth^2
     return -c * (t_smooth**2)
+
+
+# Value of the LVK turn-on S below mmin (and wherever the exact S is smaller), so that
+# log S stays finite on the mass grid: a hard zero would give -inf grid log-densities and
+# NaN gradients.
+LVK_SMOOTHING_FLOOR = 1e-30
+
+
+def log_smoothing_low_mass_lvk(
+    ms: jnp.ndarray,
+    mmin: float,
+    delta_m: float,
+) -> jnp.ndarray:
+    r"""
+    LVK low-mass turn-on (Talbot & Thrane 2018, as in gwpopulation and icarogw), in log space:
+
+    .. math::
+
+        S(m) = \begin{cases}
+            0 & m < m_\mathrm{min} \\
+            \left[1 + \exp\left(\frac{\delta_m}{m'} + \frac{\delta_m}{m' - \delta_m}\right)\right]^{-1}
+                & m_\mathrm{min} \le m < m_\mathrm{min} + \delta_m \\
+            1 & m \ge m_\mathrm{min} + \delta_m
+        \end{cases}, \qquad m' = m - m_\mathrm{min},
+
+    except that S is floored at ``LVK_SMOOTHING_FLOOR``: log S = max(log S_exact, log floor).
+    The result is finite and continuous everywhere, and its gradient is finite (zero on the floor).
+
+    Parameters
+    ----------
+    ms : jnp.ndarray
+        The mass values at which to evaluate the smoothing function.
+    mmin : float
+        The minimum mass; S is at the floor for ms <= mmin.
+    delta_m : float
+        The width of the turn-on; S = 1 for ms >= mmin + delta_m.
+
+    """
+
+    log_floor = jnp.log(LVK_SMOOTHING_FLOOR)
+    m_prime = ms - mmin
+    inside = (m_prime > 0.0) & (m_prime < delta_m)
+
+    # Evaluate the exact expression only inside the turn-on; elsewhere use a harmless point,
+    # so that neither the value nor the gradient of the unused branch is inf / NaN.
+    m_prime_safe = jnp.where(inside, m_prime, 0.5 * delta_m)
+    exponent = delta_m / m_prime_safe + delta_m / (m_prime_safe - delta_m)
+    log_s_inside = -jax.nn.softplus(exponent)
+
+    log_s = jnp.where(
+        inside, log_s_inside, jnp.where(m_prime >= delta_m, 0.0, log_floor)
+    )
+    return jnp.maximum(log_s, log_floor)
+
+
+LOW_MASS_SMOOTHINGS = {
+    "gaussian": log_smoothing_low_mass_gaussian,
+    "lvk": log_smoothing_low_mass_lvk,
+}
+
+
+def log_low_mass_smoothing(smoothing, ms, mmin, delta_m):
+    """log S(ms; mmin, delta_m) for the low-mass turn-on ``smoothing`` ("gaussian" or "lvk")."""
+    if smoothing not in LOW_MASS_SMOOTHINGS:
+        raise ValueError(
+            f"Unknown low-mass smoothing {smoothing!r}; expected one of {list(LOW_MASS_SMOOTHINGS)}."
+        )
+    return LOW_MASS_SMOOTHINGS[smoothing](ms, mmin, delta_m)
 
 
 def get_log_window_mass_s(

@@ -180,9 +180,9 @@
 let MODELS = (typeof MODEL_REGISTRY !== "undefined") ? MODEL_REGISTRY : {};
 let COSMO_MODELS = (typeof COSMO_MODEL_REGISTRY !== "undefined") ? COSMO_MODEL_REGISTRY : {};
 let MASS_RATIO_MODELS = (typeof MASS_RATIO_MODEL_REGISTRY !== "undefined") ? MASS_RATIO_MODEL_REGISTRY : {};
-let selectedModel = "power_law_peak2";
+let selectedModel = "power_law_peak2_smoothing_gaussian";
 let selectedCosmoModel = "FlatLambdaCDM";
-let selectedMassRatioModel = "mass_ratio_running_power_law_in_log";
+let selectedMassRatioModel = "mass_ratio_running_power_law_in_log_smoothing_gaussian";
 
 // Factorized mass models declare a "mass_ratio" prior group; the joint 2-D GP
 // models describe p(m_1s, q) in one go and have no mass-ratio choice to make.
@@ -192,7 +192,7 @@ function modelHasMassRatio(m) {
 
 // Priors for the currently selected mass-ratio distribution.  A mass model's
 // own block wins for the distribution it names in dist_names, since it can
-// deliberately differ from the generic set (power_law_peak2 omits
+// deliberately differ from the generic set (power_law_peak2_smoothing_gaussian omits
 // sigma_mass_cutoff_mass_2 so the code falls back to delta_m).
 function massRatioPriors() {
   const m = MODELS[selectedModel];
