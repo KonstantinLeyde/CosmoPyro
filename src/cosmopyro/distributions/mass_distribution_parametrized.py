@@ -436,10 +436,14 @@ def log_smoothing_low_mass_gaussian(
     return -c * (t_smooth**2)
 
 
-# Value of the LVK turn-on S below mmin (and wherever the exact S is smaller), so that
-# log S stays finite on the mass grid: a hard zero would give -inf grid log-densities and
-# NaN gradients.
-LVK_SMOOTHING_FLOOR = 1e-30
+# Value of the LVK turn-on S below mmin (and wherever the exact S is smaller). A hard zero
+# would give -inf grid log-densities and NaN gradients. The floor is deliberately not tiny:
+# just above mmin the exact log S drops like -delta_m / (m - mmin), and the cubic
+# interpolation of log densities on the mass grid cannot follow that cliff, which makes the
+# likelihood jagged in mmin (jumps of O(10-100) in the log-likelihood for a floor of 1e-30,
+# for any grid spacing). With 1e-4 it is about as smooth as with the Gaussian turn-on for
+# delta_m >~ 1; the density below mmin is at most 1e-4 of the model there.
+LVK_SMOOTHING_FLOOR = 1e-4
 
 
 def log_smoothing_low_mass_lvk(
