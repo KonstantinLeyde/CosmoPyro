@@ -84,12 +84,17 @@ def draw_masses_and_snr(config, params, z_samples, cosmo, key):
         )
     )
 
+    # Gaussian low-mass turn-on, as before the turn-on became selectable
     prob_m1s = mass_distribution_parametrized.construct_prob_nn_multipeak_1D(
-        analysis, params
+        analysis, params, smoothing="gaussian"
     )
     prob_q = (
         mass_distribution_parametrized.construct_running_power_law_prob_mass_ratio_nn(
-            analysis, params, m1_centers, q_centers
+            analysis,
+            params,
+            smoothing="gaussian",
+            centers_mass_1_s=m1_centers,
+            centers_mass_ratio=q_centers,
         )
     )
     # add jacobian since we have a log-space grid in m1

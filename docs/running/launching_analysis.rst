@@ -92,10 +92,13 @@ A minimal YAML configuration file looks like:
 
    # Factorized: p(m1_s) * p(q | m1_s)
    distribution_names:
-     mass_1_s: power_law_peak2    # or: power_law_peak,
-                                  # power_law_peak2_partial_windowed, fourier_gp_1D
-     mass_ratio: mass_ratio_running_power_law_in_log
-                                  # or: mass_ratio_truncated_gaussian
+     mass_1_s: power_law_peak2_smoothing_gaussian
+         # or: power_law_peak_smoothing_gaussian,
+         # power_law_peak2_partial_windowed_smoothing_gaussian, fourier_gp_1D;
+         # _smoothing_lvk instead of _smoothing_gaussian for the LVK low-mass turn-on
+     mass_ratio: mass_ratio_running_power_law_in_log_smoothing_gaussian
+         # or: mass_ratio_truncated_gaussian_smoothing_gaussian;
+         # the _smoothing_<...> suffix must match the one of mass_1_s
      redshift: MadauDickinson
    # OR joint: p(logM, delta) or p(m1_s, q)
    # distribution_names:
@@ -267,7 +270,7 @@ to get a complete configuration file.
 
 .. tab-set::
 
-   .. tab-item:: power_law_peak2
+   .. tab-item:: power_law_peak2_smoothing_gaussian
 
       Parametrized multi-peak primary mass with a running power law in
       :math:`q` -- see :doc:`../methodology/parametrized_mass_models`.
@@ -275,9 +278,9 @@ to get a complete configuration file.
       .. code-block:: yaml
 
          distribution_names:
-           mass_1_s: power_law_peak2
-           mass_ratio: mass_ratio_running_power_law_in_log
-           # or: mass_ratio_truncated_gaussian, which replaces beta_0/beta_1/
+           mass_1_s: power_law_peak2_smoothing_gaussian
+           mass_ratio: mass_ratio_running_power_law_in_log_smoothing_gaussian
+           # or: mass_ratio_truncated_gaussian_smoothing_gaussian, which replaces beta_0/beta_1/
            # mass_ratio_running_zero_point below with mu_mass_ratio and
            # sigma_mass_ratio
 
@@ -312,7 +315,7 @@ to get a complete configuration file.
 
          distribution_names:
            mass_1_s: fourier_gp_1D
-           mass_ratio: mass_ratio_running_power_law_in_log
+           mass_ratio: mass_ratio_running_power_law_in_log_smoothing_gaussian
            redshift: MadauDickinson
 
          kwargs_priors:

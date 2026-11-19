@@ -12,7 +12,7 @@ kwargs_data: {}
 
 distribution_names:
   mass_1_s: fourier_gp_1D
-  mass_ratio: mass_ratio_running_power_law_in_log
+  mass_ratio: mass_ratio_running_power_law_in_log_smoothing_gaussian
   redshift: MadauDickinson
 
 kwargs_priors:

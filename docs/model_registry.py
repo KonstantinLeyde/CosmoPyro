@@ -8,14 +8,19 @@ Used by:
 To add a new mass model, add an entry to MASS_MODELS below.
 To add a new mass-ratio model, add an entry to MASS_RATIO_MODELS below.
 To add a new cosmology model, add an entry to COSMO_MODELS below.
+
+Parametric models with a low-mass turn-on carry it in their name, "<model>_smoothing_<smoothing>"
+with <smoothing> = "gaussian" or "lvk" (see cosmopyro.distributions.source_frame_masses). The
+entries here use "gaussian"; replace the suffix by "lvk" in both mass_1_s and mass_ratio for the
+LVK turn-on (the two must match).
 """
 
 MASS_MODELS = {
-    "power_law_peak": {
+    "power_law_peak_smoothing_gaussian": {
         "description": "Single peak",
         "dist_names": {
-            "mass_1_s": "power_law_peak",
-            "mass_ratio": "mass_ratio_running_power_law_in_log",
+            "mass_1_s": "power_law_peak_smoothing_gaussian",
+            "mass_ratio": "mass_ratio_running_power_law_in_log_smoothing_gaussian",
             "redshift": "MadauDickinson",
         },
         "mass_priors": {
@@ -56,11 +61,11 @@ MASS_MODELS = {
             "redshift": {"min": 0.0, "max": 5.0, "num": 1000},
         },
     },
-    "power_law_peak2": {
+    "power_law_peak2_smoothing_gaussian": {
         "description": "Multi-peak",
         "dist_names": {
-            "mass_1_s": "power_law_peak2",
-            "mass_ratio": "mass_ratio_running_power_law_in_log",
+            "mass_1_s": "power_law_peak2_smoothing_gaussian",
+            "mass_ratio": "mass_ratio_running_power_law_in_log_smoothing_gaussian",
             "redshift": "MadauDickinson",
         },
         "mass_priors": {
@@ -113,14 +118,14 @@ MASS_MODELS = {
             "redshift": {"min": 0.0, "max": 5.0, "num": 1000},
         },
     },
-    "power_law_peak2_partial_windowed": {
+    "power_law_peak2_partial_windowed_smoothing_gaussian": {
         # Same parameters as power_law_peak2; only the windowing differs (the
         # smooth turn-on is applied to the power law alone, as in icarogw).
         # Defaults follow examples/configs/powerlaw_2peaks_gwtc5.yaml.
         "description": "Multi-peak (power law windowed only)",
         "dist_names": {
-            "mass_1_s": "power_law_peak2_partial_windowed",
-            "mass_ratio": "mass_ratio_running_power_law_in_log",
+            "mass_1_s": "power_law_peak2_partial_windowed_smoothing_gaussian",
+            "mass_ratio": "mass_ratio_running_power_law_in_log_smoothing_gaussian",
             "redshift": "MadauDickinson",
         },
         "mass_priors": {
@@ -178,7 +183,7 @@ MASS_MODELS = {
         "noise_shape_bins": {"rows": "mass_1_s"},
         "dist_names": {
             "mass_1_s": "fourier_gp_1D",
-            "mass_ratio": "mass_ratio_running_power_law_in_log",
+            "mass_ratio": "mass_ratio_running_power_law_in_log_smoothing_gaussian",
             "redshift": "MadauDickinson",
         },
         "mass_priors": {
@@ -381,10 +386,10 @@ MASS_MODELS = {
 #
 # A mass model's own "mass_ratio" block stays authoritative for whichever
 # distribution it names in dist_names, because it may deliberately differ from
-# the generic set here -- power_law_peak2, for instance, omits
+# the generic set here -- power_law_peak2_smoothing_gaussian, for instance, omits
 # sigma_mass_cutoff_mass_2 so that get_mass_delta_m2 falls back to delta_m.
 MASS_RATIO_MODELS = {
-    "mass_ratio_running_power_law_in_log": {
+    "mass_ratio_running_power_law_in_log_smoothing_gaussian": {
         "priors": {
             "beta_0": {"type": "Uniform", "min": -2.0, "max": 4.0, "value": 1.1},
             "beta_1": {"type": "Delta", "min": -0.03, "max": 0.03, "value": 0.0},
@@ -402,7 +407,7 @@ MASS_RATIO_MODELS = {
             },
         },
     },
-    "mass_ratio_truncated_gaussian": {
+    "mass_ratio_truncated_gaussian_smoothing_gaussian": {
         "priors": {
             "mu_mass_ratio": {"type": "Uniform", "min": 0.0, "max": 1.0, "value": 0.8},
             "sigma_mass_ratio": {

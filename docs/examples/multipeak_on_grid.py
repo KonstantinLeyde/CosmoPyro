@@ -41,7 +41,7 @@ params = dict(
     )
 )
 
-cond = construct_prob_nn_multipeak_1D(analysis, params)
+cond = construct_prob_nn_multipeak_1D(analysis, params, smoothing="gaussian")
 cond = normalize_cond_interpolated_1d(m1_edges, cond)
 
 model = InterpolatedConditional1D(

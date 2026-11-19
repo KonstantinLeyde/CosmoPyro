@@ -31,6 +31,7 @@ from ..data.load_catalogs import load_posterior_samples_and_injections_from_file
 from ..distributions.redshift import get_redshift_model
 from ..distributions.source_frame_masses import (
     construct_source_frame_mass_model,
+    rename_legacy_distribution_names,
 )
 from ..numpyro_utils import blackjax_utils
 from ..utils.jax_utils import (
@@ -157,7 +158,9 @@ class SkeletonAnalysis:
     def load_kwargs_analysis_from_path(self, settings_path):
         if self._kwargs_analysis is not None:
             raise RuntimeError
-        self._kwargs_analysis = self.load_yaml_file(settings_path)
+        self._kwargs_analysis = rename_legacy_distribution_names(
+            self.load_yaml_file(settings_path)
+        )
 
     def change_root_folder(self):
         """

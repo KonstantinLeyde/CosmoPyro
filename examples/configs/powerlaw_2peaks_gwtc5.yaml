@@ -8,8 +8,8 @@ cosmology_numerics:
   z_steps: 100000
 kwargs_data: {}
 distribution_names:
-  mass_1_s: power_law_peak2_partial_windowed
-  mass_ratio: mass_ratio_running_power_law_in_log
+  mass_1_s: power_law_peak2_partial_windowed_smoothing_gaussian
+  mass_ratio: mass_ratio_running_power_law_in_log_smoothing_gaussian
   redshift: MadauDickinson
 kwargs_priors:
   cosmology:

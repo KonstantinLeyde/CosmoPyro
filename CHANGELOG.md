@@ -12,9 +12,22 @@ Development before 0.0.0 is not summarised here.
 
 - `check_skymap_values` (`cosmopyro.data`), called from `run_data_checks`: sky maps must be
   finite and non-negative (errors); exact zeros give a warning.
+- LVK low-mass turn-on (Talbot & Thrane 2018) for the parametric mass models,
+  `log_smoothing_low_mass_lvk`, selected with the `_smoothing_lvk` model names (see Changed).
+  S is floored at `LVK_SMOOTHING_FLOOR` = 1e-30 instead of being zero below `mmin`, so grid
+  log-densities and gradients stay finite.
 
 ### Changed
 
+- **Breaking:** parametric mass models name their low-mass turn-on,
+  `<model>_smoothing_gaussian` (the previous, approximate turn-on) or `<model>_smoothing_lvk`:
+  `power_law_peak`, `power_law_peak2`, `power_law_peak2_partial_windowed`,
+  `mass_ratio_running_power_law_in_log`, `mass_ratio_truncated_gaussian`. The `mass_1_s` and
+  `mass_ratio` suffixes must match. Configs and results with the old names are read as
+  `_smoothing_gaussian` with a warning (`rename_legacy_distribution_names`, applied when an
+  `Analysis` / `Result` loads its settings). The model functions take a required keyword
+  `smoothing="gaussian" | "lvk"`, and `log_lvk_smoothing_low_mass_approximation` is renamed to
+  `log_smoothing_low_mass_gaussian`.
 - Faster likelihood gradient (~1.75x per NUTS step for the gwcats LOS runs, 115 -> 65 ms on an
   RTX A6000; value and gradient unchanged to 3e-13):
   - `apply_batched_operation_1d` applies `jax.checkpoint` only if the data is split into more
