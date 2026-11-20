@@ -52,6 +52,25 @@ catalog pipeline), save it as a ``SimpleNamespace`` with the required fields:
    CosmoPyro validates this at runtime and will raise a ``ValueError`` if
    there is a mismatch.
 
+Non-uniform redshift bins
+-------------------------
+
+With ``bins: {redshift: from_skymap}`` the analysis takes its redshift bins from
+the sky map's ``z_edges`` instead of ``{min, max, num}``. The edges can then be
+non-uniform, e.g. fine at low redshift, where the galaxy catalogue carries
+structure, and broad at high redshift:
+
+.. code-block:: python
+
+   z_edges = np.concatenate([np.linspace(0.0, 0.5, 1001),     # dz = 5e-4
+                             np.linspace(0.5, 5.0, 451)[1:]])  # dz = 0.01
+
+The same bins also carry the population redshift distribution and the
+injections, so they should stay fine enough for :math:`p(z)` too. A run with
+``from_skymap`` and no sky map raises a ``ValueError``. Results saved with
+``from_skymap`` read the edges back from ``run_kwargs.path_skymap`` when
+loaded, so the sky map file has to stay where it was.
+
 
 Validation
 ----------

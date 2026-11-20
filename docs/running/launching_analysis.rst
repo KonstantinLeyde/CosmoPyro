@@ -153,7 +153,7 @@ A minimal YAML configuration file looks like:
    bins:
      mass_1_s: {min: 1.0, max: 150.0, num: 400}
      mass_ratio: {min: 0.03, max: 1.0, num: 200}
-     redshift: {min: 0.0, max: 5.0, num: 1000}
+     redshift: {min: 0.0, max: 5.0, num: 1000}  # or: from_skymap (the sky map's z_edges)
      mass_grid_interpolation: smooth_log      # or linear_density
      redshift_grid_interpolation: smooth_log  # or linear_density
 

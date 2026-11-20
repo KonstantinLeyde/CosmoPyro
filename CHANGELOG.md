@@ -12,6 +12,10 @@ Development before 0.0.0 is not summarised here.
 
 - `check_skymap_values` (`cosmopyro.data`), called from `run_data_checks`: sky maps must be
   finite and non-negative (errors); exact zeros give a warning.
+- `bins: {redshift: from_skymap}`: the redshift bins are the sky map's `z_edges`, which can
+  be non-uniform (e.g. fine at low z, broad at high z). Requires a sky map; results read the
+  edges back from `run_kwargs.path_skymap`. `HealPixDiscretization3D` accepts explicit
+  `r_edges`.
 - LVK low-mass turn-on (Talbot & Thrane 2018) for the parametric mass models,
   `log_smoothing_low_mass_lvk`, selected with the `_smoothing_lvk` model names (see Changed).
   S is floored at `LVK_SMOOTHING_FLOOR` = 1e-4 instead of being zero below `mmin`, so grid
