@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from ..utils.jax_utils import (
     hist_v,
@@ -76,9 +77,13 @@ def compute_spherical_coordinates(r_array, theta_array, phi_array):
     return cartesian_coords
 
 
-def get_radial_centers_and_boundaries(n_r, r_min, r_max):
+def get_radial_centers_and_boundaries(n_r, r_min, r_max, r_edges=None):
+    """Radial bins: n_r uniform bins on [r_min, r_max], or the explicit edges r_edges."""
 
-    boundaries = jnp.linspace(r_min, r_max, n_r + 1)
+    if r_edges is None:
+        boundaries = jnp.linspace(r_min, r_max, n_r + 1)
+    else:
+        boundaries = jnp.asarray(r_edges)
     centers, deltas = compute_centers_and_delta_from_array(boundaries)
 
     return centers, boundaries, deltas
@@ -146,14 +151,28 @@ class HealPixDiscretization:
 
 
 class HealPixDiscretization3D(HealPixDiscretization):
-    def __init__(self, n_r, r_min, r_max, nside, scheme="ring"):
+    """HEALPix pixels times radial (redshift) bins.
+
+    The radial bins are either n_r uniform bins on [r_min, r_max], or given by the
+    explicit, strictly increasing edges ``r_edges`` (then n_r, r_min, r_max follow from them).
+    """
+
+    def __init__(self, n_r=None, r_min=None, r_max=None, nside=None, scheme="ring", r_edges=None):
+        if r_edges is not None:
+            r_edges = np.asarray(r_edges, dtype=np.float64)
+            if r_edges.ndim != 1 or r_edges.size < 2 or not np.all(np.diff(r_edges) > 0):
+                raise ValueError("r_edges must be a 1-D, strictly increasing array of at least 2 edges.")
+            n_r, r_min, r_max = r_edges.size - 1, float(r_edges[0]), float(r_edges[-1])
+        elif n_r is None or r_min is None or r_max is None:
+            raise ValueError("Give either n_r, r_min and r_max, or r_edges.")
         self.n_r = n_r
         self.r_min = r_min
         self.r_max = r_max
+        self.r_edges = r_edges
 
         super().__init__(nside, scheme)
         self.centers["r"], self.boundaries["r"], self.deltas["r"] = (
-            get_radial_centers_and_boundaries(n_r, r_min, r_max)
+            get_radial_centers_and_boundaries(n_r, r_min, r_max, r_edges=r_edges)
         )
 
     def to_init_dict(self):

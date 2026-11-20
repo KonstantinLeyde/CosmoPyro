@@ -70,6 +70,8 @@ __all__ = [
     "Result",
     "SkeletonAnalysis",
     "get_redshift_discretization_kwargs",
+    "read_skymap_z_edges",
+    "redshift_bins_from_skymap",
     "load_cosmopyro_results_no_tensors",
     "pick_out_add_healpix_discretization_3d_kwargs",
     "pick_out_apparent_magnitude_discretization_kwargs",
@@ -887,9 +889,20 @@ class Analysis(SkeletonAnalysis):
                 f"Skymap loaded: inferred nside={nside} from prob_skyposition_zhp shape {skymap.prob_skyposition_zhp.shape}."
             )
             # Rebuild discretization_3d (binning updates automatically via setter)
+            z_edges = None
+            if redshift_bins_from_skymap(self.kwargs_analysis):
+                if getattr(skymap, "z_edges", None) is None:
+                    raise ValueError(
+                        f"bins.redshift = {REDSHIFT_BINS_FROM_SKYMAP}, but the sky map {path_skymap} has no z_edges."
+                    )
+                z_edges = skymap.z_edges
             self.discretization_3d = None
-            self.add_discretization_3d()
+            self.add_discretization_3d(z_edges=z_edges)
         else:
+            if redshift_bins_from_skymap(self.kwargs_analysis):
+                raise ValueError(
+                    f"bins.redshift = {REDSHIFT_BINS_FROM_SKYMAP} needs a sky map (run_kwargs.path_skymap), but none is given."
+                )
             skymap = None
         return skymap
 
@@ -923,15 +936,17 @@ class Analysis(SkeletonAnalysis):
         if value is not None:
             self.binning = get_binning_from_kwargs_analysis(self.kwargs_analysis, value)
 
-    def get_discretization_3d(self):
+    def get_discretization_3d(self, z_edges=None):
         if self._discretization_3d is None and self.using_catalog:
-            kwargs = get_redshift_discretization_kwargs(self.kwargs_analysis)
-            self.discretization_3d = HealPixDiscretization3D(nside=self.nside, **kwargs)
+            kwargs = get_redshift_discretization_kwargs(self.kwargs_analysis, z_edges)
+            if kwargs is not None:  # None: bins.redshift = from_skymap, set when the sky map is loaded
+                self.discretization_3d = HealPixDiscretization3D(nside=self.nside, **kwargs)
         return self._discretization_3d
 
-    def add_discretization_3d(self):
-        self.get_discretization_3d()
-        self.check_settings()
+    def add_discretization_3d(self, z_edges=None):
+        self.get_discretization_3d(z_edges)
+        if self._discretization_3d is not None:
+            self.check_settings()
 
     def check_settings(self):
         r_max_cosmo_model = self.kwargs_analysis["cosmology_numerics"]["z_max"]
@@ -1015,8 +1030,42 @@ def remove_tensors_from_arviz(ds):
     return ds[[var for var in ds.data_vars if len(ds[var].dims) == 2]]
 
 
-def get_redshift_discretization_kwargs(metadata):
+REDSHIFT_BINS_FROM_SKYMAP = "from_skymap"
+
+
+def redshift_bins_from_skymap(metadata):
+    """True if the config takes the redshift bins from the sky map (``bins: {redshift: from_skymap}``)."""
+    return (metadata.get("bins") or {}).get("redshift") == REDSHIFT_BINS_FROM_SKYMAP
+
+
+def read_skymap_z_edges(path_skymap):
+    """The z_edges of a sky map file, without loading the (large) map itself."""
+    import h5py
+
+    with h5py.File(path_skymap, "r") as f:
+        if "z_edges" not in f:
+            raise ValueError(
+                f"bins.redshift = {REDSHIFT_BINS_FROM_SKYMAP}, but the sky map {path_skymap} has no z_edges."
+            )
+        return np.asarray(f["z_edges"][()], dtype=np.float64)
+
+
+def get_redshift_discretization_kwargs(metadata, z_edges=None):
+    """Keyword arguments of HealPixDiscretization3D for the redshift bins in ``metadata["bins"]``.
+
+    ``bins.redshift`` is either ``{min, max, num}`` (uniform bins) or ``from_skymap``: the
+    (possibly non-uniform) edges of the sky map, given as ``z_edges`` or read from
+    ``run_kwargs.path_skymap``. Returns None for ``from_skymap`` if neither is available yet
+    (the bins are then set when the sky map is loaded).
+    """
     binning_metadata = metadata.get("bins")
+    if binning_metadata is not None and redshift_bins_from_skymap(metadata):
+        if z_edges is None:
+            path_skymap = (metadata.get("run_kwargs") or {}).get("path_skymap")
+            if path_skymap is None:
+                return None
+            z_edges = read_skymap_z_edges(path_skymap)
+        return dict(r_edges=np.asarray(z_edges, dtype=np.float64))
     if binning_metadata is not None:
         return dict(
             r_min=binning_metadata["redshift"]["min"],
@@ -1031,7 +1080,12 @@ def get_redshift_discretization_kwargs(metadata):
 
 def pick_out_add_healpix_discretization_3d_kwargs(metadata, nside=1):
 
-    return dict(**get_redshift_discretization_kwargs(metadata), nside=int(nside))
+    kwargs = get_redshift_discretization_kwargs(metadata)
+    if kwargs is None:
+        raise ValueError(
+            f"bins.redshift = {REDSHIFT_BINS_FROM_SKYMAP} needs a sky map (run_kwargs.path_skymap)."
+        )
+    return dict(**kwargs, nside=int(nside))
 
 
 def pick_out_apparent_magnitude_discretization_kwargs(catalog_metadata):
